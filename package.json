@@ -1,0 +1,16 @@
+{
+  "name": "work-ledger-server",
+  "version": "1.1.0",
+  "description": "工作事务进度追踪台账 - 多人共享版（含创始账号审核，Postgres 持久化）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "pg": "^8.22.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: work-ledger
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: "/"
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: NODE_VERSION
+        value: "20"
+      # 持久化数据库：在 Render 后台手动填入你的 Postgres 连接串（如 Neon/Supabase）
+      # 留空则使用本地文件存储（重部署会重置），填入后数据永久保存、重部署不丢
+      - key: DATABASE_URL
+        sync: false

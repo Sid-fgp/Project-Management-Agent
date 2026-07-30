@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作事务进度追踪台账</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --border:#e4e9f0; --text:#1f2937; --muted:#6b7280;
+    --primary:#3b82f6; --primary-dark:#2563eb; --primary-light:#eff6ff;
+    --danger:#ef4444; --danger-light:#fef2f2;
+    --warn:#f59e0b; --warn-light:#fffbeb;
+    --success:#10b981; --success-light:#ecfdf5;
+    --radius:10px; --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+  .container{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+
+  /* ===== 顶部 ===== */
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+  header h1{font-size:22px;font-weight:700;display:flex;align-items:center;gap:8px}
+  header h1 .logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:17px}
+  .header-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ===== 统计卡片 ===== */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s, box-shadow .15s}
+  .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .stat-card.active{outline:2px solid var(--primary)}
+  .stat-card .num{font-size:26px;font-weight:700}
+  .stat-card .label{color:var(--muted);font-size:13px;margin-top:2px}
+  .stat-card.c-all .num{color:var(--primary)}
+  .stat-card.c-todo .num{color:#8b5cf6}
+  .stat-card.c-doing .num{color:var(--warn)}
+  .stat-card.c-done .num{color:var(--success)}
+  .stat-card.c-soon .num{color:#f97316}
+  .stat-card.c-overdue .num{color:var(--danger)}
+
+  /* ===== 工具栏 ===== */
+  .toolbar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+  .toolbar input[type=text],.toolbar select,.toolbar input[type=date]{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;color:var(--text);outline:none}
+  .toolbar input[type=text]:focus,.toolbar select:focus{border-color:var(--primary)}
+  .toolbar input[type=text]{flex:1;min-width:160px}
+  .toolbar label{color:var(--muted);font-size:12px}
+
+  /* ===== 按钮 ===== */
+  .btn{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s}
+  .btn:hover{opacity:.85}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}
+  .btn-danger{background:var(--danger-light);color:var(--danger);border:1px solid #fecaca}
+  .btn-sm{padding:4px 9px;font-size:12px;border-radius:6px}
+
+  /* ===== 分组与表格 ===== */
+  .group-block{margin-bottom:18px}
+  .group-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:600;font-size:15px}
+  .group-header .count{background:var(--primary-light);color:var(--primary-dark);border-radius:99px;padding:1px 10px;font-size:12px;font-weight:600}
+  .group-header .gdone{color:var(--muted);font-size:12px;font-weight:400}
+  .task-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .task-table th{background:#f8fafc;text-align:left;padding:9px 12px;font-size:12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+  .task-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .task-table tr:last-child td{border-bottom:none}
+  .task-table tbody tr{transition:background .12s;cursor:pointer}
+  .task-table tbody tr:hover{background:#f8fafc}
+  tr.row-overdue{background:var(--danger-light)!important;box-shadow:inset 3px 0 0 var(--danger)}
+  tr.row-soon{background:var(--warn-light)!important;box-shadow:inset 3px 0 0 var(--warn)}
+  tr.row-done .task-title{text-decoration:line-through;color:var(--muted)}
+  .task-title{font-weight:600;font-size:14px}
+  .task-desc{color:var(--muted);font-size:12px;margin-top:2px;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .due-cell{white-space:nowrap;font-size:13px}
+  .due-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:600}
+  .due-tag.overdue{background:var(--danger);color:#fff}
+  .due-tag.soon{background:var(--warn);color:#fff}
+  .due-tag.today{background:#f97316;color:#fff}
+
+  /* 徽章 */
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge .dot{width:6px;height:6px;border-radius:50%}
+  .p-high{background:#fee2e2;color:#b91c1c}.p-high .dot{background:#ef4444}
+  .p-mid{background:#fef3c7;color:#b45309}.p-mid .dot{background:#f59e0b}
+  .p-low{background:#e0f2fe;color:#0369a1}.p-low .dot{background:#0ea5e9}
+  .s-todo{background:#ede9fe;color:#6d28d9}.s-todo .dot{background:#8b5cf6}
+  .s-doing{background:#fef3c7;color:#b45309}.s-doing .dot{background:#f59e0b}
+  .s-done{background:#d1fae5;color:#047857}.s-done .dot{background:#10b981}
+  .cat-badge{background:#f1f5f9;color:#475569;padding:2px 10px;border-radius:6px;font-size:12px;white-space:nowrap}
+  .pending-badge{background:var(--danger);color:#fff;margin-left:4px;padding:0 7px;border-radius:99px;font-size:11px}
+
+  /* 状态快捷切换 */
+  .status-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer}
+
+  .empty{background:var(--card);border:1px dashed var(--border);border-radius:var(--radius);padding:50px 20px;text-align:center;color:var(--muted)}
+  .empty .icon{font-size:40px;margin-bottom:10px}
+
+  /* ===== 弹窗 ===== */
+  .modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.4);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 16px;overflow-y:auto}
+  .modal-mask.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 50px rgba(0,0,0,.2);animation:pop .18s ease}
+  @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .modal-head h3{font-size:16px}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+  .modal-body{padding:18px 20px}
+  .form-row{display:flex;gap:12px}
+  .form-group{margin-bottom:14px;flex:1}
+  .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .form-group label .req{color:var(--danger)}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:var(--text)}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+  .form-group textarea{resize:vertical;min-height:64px}
+  .modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+  /* ===== 详情/时间轴 ===== */
+  .detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .detail-desc{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:#374151;margin-bottom:16px;white-space:pre-wrap}
+  .timeline{position:relative;padding-left:20px;max-height:300px;overflow-y:auto}
+  .timeline::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:var(--border)}
+  .tl-item{position:relative;padding:0 0 14px 12px}
+  .tl-item::before{content:"";position:absolute;left:-19px;top:4px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--primary)}
+  .tl-item.tl-create::before{border-color:var(--success)}
+  .tl-item.tl-status::before{border-color:var(--warn)}
+  .tl-item.tl-note::before{border-color:var(--primary)}
+  .tl-time{font-size:11px;color:var(--muted)}
+  .tl-text{font-size:13px;margin-top:1px}
+  .tl-note-input{display:flex;gap:8px;margin-top:10px}
+  .tl-note-input input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;outline:none}
+
+  /* toast */
+  #toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#1f2937;color:#fff;padding:9px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:200}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* 审核列表 */
+  .audit-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+  .audit-row span{font-size:13px;word-break:break-all}
+
+  @media (max-width:720px){
+    .task-table .hide-sm{display:none}
+    .form-row{flex-direction:column;gap:0}
+  }
+  /* ===== 登录 ===== */
+  #app.hidden{display:none}
+  .login-mask{position:fixed;inset:0;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px}
+  .login-mask.hidden{display:none}
+  .login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.25);text-align:center}
+  .login-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:28px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .login-card h2{font-size:19px;margin-bottom:4px}
+  .login-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .login-card input{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-bottom:12px;outline:none;box-sizing:border-box}
+  .login-card input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+  .login-btn{width:100%;justify-content:center;margin-bottom:10px}
+  .login-err{color:var(--danger);font-size:12px;min-height:16px;margin-bottom:6px}
+  .login-hint{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.5}
+  .cur-user{font-size:13px;color:var(--muted);background:var(--primary-light);padding:5px 10px;border-radius:99px;margin-right:2px}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <header>
+    <h1><span class="logo">📋</span>工作事务进度追踪台账</h1>
+    <div class="header-actions">
+      <span class="cur-user" id="curUser"></span>
+      <button class="btn btn-outline btn-sm" id="btnAudit" style="display:none" onclick="openAudit()">🛡 审核注册 <span class="pending-badge" id="auditCount" style="display:none">0</span></button>
+      <button class="btn btn-outline btn-sm" onclick="logout()">退出</button>
+      <button class="btn btn-outline" onclick="exportData()">⬇ 导出数据</button>
+      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">⬆ 导入数据</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="btn btn-primary" onclick="openEditModal()">＋ 新增事务</button>
+    </div>
+  </header>
+
+  <!-- 统计卡片（点击可筛选） -->
+  <div class="stats" id="stats"></div>
+
+  <!-- 筛选工具栏 -->
+  <div class="toolbar">
+    <input type="text" id="fSearch" placeholder="🔍 搜索标题 / 描述 / 分类…" oninput="render()">
+    <select id="fStatus" onchange="render()">
+      <option value="">全部状态</option><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option>
+    </select>
+    <select id="fPriority" onchange="render()">
+      <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
+    </select>
+    <select id="fCategory" onchange="render()"><option value="">全部分类</option></select>
+    <label>截止≤ <input type="date" id="fDue" onchange="render()"></label>
+    <select id="fSort" onchange="setSortKey(this.value)">
+      <option value="due">按截止日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="category">按分类</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
+    </select>
+    <button class="btn btn-outline btn-sm" id="btnSortDir" onclick="toggleSortDir()" title="切换升序/降序">↑ 升序</button>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fGroup" checked onchange="render()">按分类分组</label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone" onchange="render()">隐藏已完成</label>
+    <button class="btn btn-outline btn-sm" onclick="resetFilters()">重置</button>
+  </div>
+
+  <!-- 台账列表 -->
+  <div id="ledger"></div>
+</div>
+
+<!-- 新增/编辑弹窗 -->
+<div class="modal-mask" id="editMask">
+  <div class="modal">
+    <div class="modal-head"><h3 id="editTitle">新增事务</h3><button class="modal-close" onclick="closeModal('editMask')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>标题 <span class="req">*</span></label><input id="inTitle" maxlength="60" placeholder="例如：完成季度汇报PPT"></div>
+      <div class="form-group"><label>描述</label><textarea id="inDesc" placeholder="补充说明、关键要点…"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>优先级</label>
+          <select id="inPriority"><option value="high">🔴 高</option><option value="mid" selected>🟡 中</option><option value="low">🔵 低</option></select>
+        </div>
+        <div class="form-group"><label>状态</label>
+          <select id="inStatus"><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>截止日期</label><input type="date" id="inDue"></div>
+        <div class="form-group"><label>项目 / 分类</label><input id="inCategory" list="catList" maxlength="20" placeholder="例如：A项目、日常行政"><datalist id="catList"></datalist></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('editMask')">取消</button>
+      <button class="btn btn-primary" onclick="saveTask()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 详情/时间轴弹窗 -->
+<div class="modal-mask" id="detailMask">
+  <div class="modal">
+    <div class="modal-head"><h3 id="dTitle">事务详情</h3><button class="modal-close" onclick="closeModal('detailMask')">✕</button></div>
+    <div class="modal-body">
+      <div class="detail-meta" id="dMeta"></div>
+      <div class="detail-desc" id="dDesc"></div>
+      <div style="font-weight:600;margin-bottom:10px">📜 进展时间轴</div>
+      <div class="timeline" id="dTimeline"></div>
+      <div class="tl-note-input">
+        <input id="dNote" placeholder="记录一条进展备注…" onkeydown="if(event.key==='Enter')addNote()">
+        <button class="btn btn-primary btn-sm" onclick="addNote()">添加</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" onclick="deleteTask()">🗑 删除</button>
+      <button class="btn btn-outline" onclick="editFromDetail()">✏️ 编辑</button>
+      <button class="btn btn-primary" onclick="closeModal('detailMask')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 注册审核弹窗（创始账号） -->
+<div class="modal-mask" id="auditMask">
+  <div class="modal">
+    <div class="modal-head"><h3>🛡 注册审核（创始账号）</h3><button class="modal-close" onclick="closeModal('auditMask')">✕</button></div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px">以下账号提交了注册申请，通过后即可登录使用本台账。拒绝将删除该申请。</p>
+      <div id="auditList"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-primary" onclick="closeModal('auditMask')">关闭</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- 登录界面 -->
+<div class="login-mask" id="loginMask">
+  <div class="login-card">
+    <div class="login-logo">📋</div>
+    <h2>工作事务进度追踪台账</h2>
+    <p class="login-sub">登录或注册后查看你的专属台账</p>
+    <input type="text" id="lgEmail" placeholder="账号（邮箱）" autocomplete="username">
+    <input type="password" id="lgPwd" placeholder="密码（6 位或以上数字）" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="login-err" id="lgErr"></div>
+    <button class="btn btn-primary login-btn" onclick="doLogin()">登录</button>
+    <button class="btn btn-outline login-btn" onclick="doRegister()">注册新账号</button>
+    <p class="login-hint">新账号注册后需经创始账号 <b>sidfeng@summit-pines.com</b> 审核通过，方可登录。</p>
+  </div>
+</div>
+
+<script>
+const STATUS_TXT={todo:'待办',doing:'进行中',done:'已完成'};
+const PRI_TXT={high:'高',mid:'中',low:'低'};
+const PRI_ORDER={high:0,mid:1,low:2};
+const STATUS_ORDER={todo:0,doing:1,done:2};
+let tasks=[];
+let authToken=localStorage.getItem('ledger_token')||null;
+let curRole=null;
+let backendMode=true;            // 探测到后端API时为true；否则退化为本地单人模式
+let editingId=null, detailId=null, statFilter='';
+let sortKey='due', sortDir='asc';
+
+/* ---------- API 层 ---------- */
+async function apiReq(p,opts={}){
+  const headers={'Content-Type':'application/json'};
+  if(authToken) headers['Authorization']='Bearer '+authToken;
+  const res=await fetch('/api'+p,{...opts,headers});
+  let data=null; try{data=await res.json();}catch(e){}
+  if(!res.ok) throw new Error((data&&data.error)||('请求失败 '+res.status));
+  return data;
+}
+const api={
+  register:(e,p)=>apiReq('/register',{method:'POST',body:JSON.stringify({email:e,password:p})}),
+  login:(e,p)=>apiReq('/login',{method:'POST',body:JSON.stringify({email:e,password:p})}),
+  logout:()=>apiReq('/logout',{method:'POST'}),
+  me:()=>apiReq('/me'),
+  pending:()=>apiReq('/pending'),
+  approve:(e)=>apiReq('/approve',{method:'POST',body:JSON.stringify({email:e})}),
+  reject:(e)=>apiReq('/reject',{method:'POST',body:JSON.stringify({email:e})}),
+  getTasks:()=>apiReq('/tasks'),
+  saveTasks:(arr)=>apiReq('/tasks',{method:'PUT',body:JSON.stringify(arr)}),
+};
+
+/* ---------- 持久化（有后端则同步服务端，无后端则本地存储） ---------- */
+async function load(){
+  if(backendMode){
+    try{ const r=await api.getTasks(); tasks=r.tasks||[]; }catch(e){ tasks=[]; toast('加载失败：'+e.message); }
+  }else{
+    try{ tasks=JSON.parse(localStorage.getItem('ledger_local_tasks'))||[]; }catch(e){ tasks=[]; }
+  }
+}
+function persist(){
+  if(backendMode) return api.saveTasks(tasks).catch(e=>toast('保存失败：'+e.message));
+  localStorage.setItem('ledger_local_tasks', JSON.stringify(tasks));
+}
+
+/* ---------- 工具 ---------- */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const now=()=>new Date().toISOString();
+const fmtDT=iso=>{const d=new Date(iso);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function dueState(t){
+  if(!t.due||t.status==='done')return 'none';
+  const today=todayStr();
+  if(t.due<today)return 'overdue';
+  if(t.due===today)return 'today';
+  const diff=(new Date(t.due)-new Date(today))/86400000;
+  return diff<=3?'soon':'normal';
+}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1800);}
+const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- 统计 ---------- */
+function renderStats(){
+  const c={all:tasks.length,todo:0,doing:0,done:0,soon:0,overdue:0};
+  tasks.forEach(t=>{c[t.status]++;const ds=dueState(t);if(ds==='overdue')c.overdue++;else if(ds==='soon'||ds==='today')c.soon++;});
+  const defs=[['all','全部事务','c-all'],['todo','待办','c-todo'],['doing','进行中','c-doing'],['done','已完成','c-done'],['soon','临近截止','c-soon'],['overdue','已逾期','c-overdue']];
+  document.getElementById('stats').innerHTML=defs.map(([k,label,cls])=>
+    `<div class="stat-card ${cls} ${statFilter===k?'active':''}" onclick="clickStat('${k}')"><div class="num">${c[k]}</div><div class="label">${label}</div></div>`).join('');
+}
+function clickStat(k){
+  statFilter=(statFilter===k||k==='all')?'':k;
+  if(k==='done'){const h=document.getElementById('fHideDone');if(h)h.checked=false;}
+  render();
+}
+
+/* ---------- 渲染台账 ---------- */
+function matchFilters(t){
+  const q=document.getElementById('fSearch').value.trim().toLowerCase();
+  if(q&&!((t.title+t.desc+t.category).toLowerCase().includes(q)))return false;
+  const h=document.getElementById('fHideDone');
+  if(h&&h.checked&&t.status==='done')return false;
+  const fs=document.getElementById('fStatus').value; if(fs&&t.status!==fs)return false;
+  const fp=document.getElementById('fPriority').value; if(fp&&t.priority!==fp)return false;
+  const fc=document.getElementById('fCategory').value; if(fc&&t.category!==fc)return false;
+  const fd=document.getElementById('fDue').value; if(fd&&(!t.due||t.due>fd))return false;
+  if(statFilter==='todo'||statFilter==='doing'||statFilter==='done'){if(t.status!==statFilter)return false;}
+  if(statFilter==='soon'){const ds=dueState(t);if(ds!=='soon'&&ds!=='today')return false;}
+  if(statFilter==='overdue'&&dueState(t)!=='overdue')return false;
+  return true;
+}
+function sortTasks(arr){
+  const s=sortKey, dir=sortDir==='asc'?1:-1;
+  return arr.slice().sort((a,b)=>{
+    let r=0;
+    if(s==='priority'){r=PRI_ORDER[a.priority]-PRI_ORDER[b.priority];if(r===0)r=(a.due||'9999').localeCompare(b.due||'9999');}
+    else if(s==='title'){r=(a.title||'').localeCompare((b.title||''),'zh');}
+    else if(s==='category'){r=(a.category||'').localeCompare((b.category||''),'zh');}
+    else if(s==='status'){r=STATUS_ORDER[a.status]-STATUS_ORDER[b.status];}
+    else if(s==='created'){r=a.createdAt.localeCompare(b.createdAt);}
+    else if(s==='updated'){r=a.updatedAt.localeCompare(b.updatedAt);}
+    else {r=(a.due||'9999-99').localeCompare(b.due||'9999-99');}
+    return r*dir;
+  });
+}
+function setSortKey(k){ sortKey=k; updateSortDirBtn(); render(); }
+function toggleSortDir(){ sortDir=sortDir==='asc'?'desc':'asc'; updateSortDirBtn(); render(); }
+function sortBy(k){
+  if(sortKey===k){sortDir=sortDir==='asc'?'desc':'asc';}
+  else{sortKey=k; sortDir=(k==='created'||k==='updated')?'desc':'asc';}
+  const fsEl=document.getElementById('fSort'); if(fsEl)fsEl.value=k;
+  updateSortDirBtn(); render();
+}
+function updateSortDirBtn(){ const b=document.getElementById('btnSortDir'); if(b)b.textContent=sortDir==='asc'?'↑ 升序':'↓ 降序'; }
+function rowHTML(t){
+  const ds=dueState(t);
+  let rowCls=t.status==='done'?'row-done':(ds==='overdue'?'row-overdue':(ds==='soon'||ds==='today')?'row-soon':'');
+  let dueTag='';
+  if(ds==='overdue')dueTag='<span class="due-tag overdue">已逾期</span>';
+  else if(ds==='today')dueTag='<span class="due-tag today">今日截止</span>';
+  else if(ds==='soon')dueTag='<span class="due-tag soon">临近截止</span>';
+  return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">
+    <td><div class="task-title">${esc(t.title)}</div>${t.desc?`<div class="task-desc">${esc(t.desc)}</div>`:''}</td>
+    <td class="hide-sm"><span class="cat-badge">${esc(t.category)||'未分类'}</span></td>
+    <td><span class="badge p-${t.priority}"><span class="dot"></span>${PRI_TXT[t.priority]}</span></td>
+    <td class="due-cell">${t.due||'<span style="color:#9ca3af">—</span>'}${dueTag}</td>
+    <td onclick="event.stopPropagation()">
+      <select class="status-select" onchange="quickStatus('${t.id}',this.value)">
+        <option value="todo" ${t.status==='todo'?'selected':''}>待办</option>
+        <option value="doing" ${t.status==='doing'?'selected':''}>进行中</option>
+        <option value="done" ${t.status==='done'?'selected':''}>已完成</option>
+      </select>
+    </td>
+    <td class="hide-sm" style="color:var(--muted);font-size:12px;white-space:nowrap">${fmtDT(t.updatedAt)}</td>
+  </tr>`;
+}
+function tableHead(){
+  const cols=[{k:'title',t:'事务',c:''},{k:'category',t:'分类',c:'hide-sm'},{k:'priority',t:'优先级',c:''},{k:'due',t:'截止日期',c:''},{k:'status',t:'状态',c:''},{k:'updated',t:'最近更新',c:'hide-sm'}];
+  return '<thead><tr>'+cols.map(col=>{
+    const active=col.k===sortKey;
+    const arrow=active?(sortDir==='asc'?' ▲':' ▼'):'';
+    return `<th class="${col.c}" style="cursor:pointer;user-select:none" onclick="sortBy('${col.k}')" title="点击切换排序">${col.t}${arrow}</th>`;
+  }).join('')+'</tr></thead>';
+}
+function render(){
+  const fsEl=document.getElementById('fSort'); if(fsEl)fsEl.value=sortKey;
+  updateSortDirBtn();
+  renderStats();
+  refreshCategoryOptions();
+  const list=sortTasks(tasks.filter(matchFilters));
+  const box=document.getElementById('ledger');
+  if(!list.length){
+    box.innerHTML=`<div class="empty"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`;
+    return;
+  }
+  if(document.getElementById('fGroup').checked){
+    const groups={};
+    list.forEach(t=>{const g=t.category||'未分类';(groups[g]=groups[g]||[]).push(t);});
+    box.innerHTML=Object.keys(groups).sort().map(g=>{
+      const arr=groups[g],done=arr.filter(t=>t.status==='done').length;
+      return `<div class="group-block">
+        <div class="group-header">📁 ${esc(g)} <span class="count">${arr.length}</span><span class="gdone">已完成 ${done}/${arr.length}</span></div>
+        <table class="task-table">${tableHead()}<tbody>${arr.map(rowHTML).join('')}</tbody></table></div>`;
+    }).join('');
+  }else{
+    box.innerHTML=`<table class="task-table">${tableHead()}<tbody>${list.map(rowHTML).join('')}</tbody></table>`;
+  }
+}
+function refreshCategoryOptions(){
+  const cats=[...new Set(tasks.map(t=>t.category).filter(Boolean))].sort();
+  const sel=document.getElementById('fCategory'),cur=sel.value;
+  sel.innerHTML='<option value="">全部分类</option>'+cats.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('');
+  document.getElementById('catList').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
+}
+function resetFilters(){
+  ['fSearch','fDue'].forEach(id=>document.getElementById(id).value='');
+  ['fStatus','fPriority','fCategory'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fSort').value='due'; statFilter=''; sortKey='due'; sortDir='asc'; updateSortDirBtn(); render();
+}
+
+/* ---------- 新增 / 编辑 ---------- */
+function openEditModal(id){
+  editingId=id||null;
+  document.getElementById('editTitle').textContent=id?'编辑事务':'新增事务';
+  const t=id?tasks.find(x=>x.id===id):null;
+  document.getElementById('inTitle').value=t?t.title:'';
+  document.getElementById('inDesc').value=t?t.desc:'';
+  document.getElementById('inPriority').value=t?t.priority:'mid';
+  document.getElementById('inStatus').value=t?t.status:'todo';
+  document.getElementById('inDue').value=t?t.due:'';
+  document.getElementById('inCategory').value=t?t.category:'';
+  document.getElementById('editMask').classList.add('show');
+  setTimeout(()=>document.getElementById('inTitle').focus(),50);
+}
+function saveTask(){
+  const title=document.getElementById('inTitle').value.trim();
+  if(!title){toast('请填写事务标题');return;}
+  const v={title,desc:document.getElementById('inDesc').value.trim(),
+    priority:document.getElementById('inPriority').value,status:document.getElementById('inStatus').value,
+    due:document.getElementById('inDue').value,category:document.getElementById('inCategory').value.trim()};
+  if(editingId){
+    const t=tasks.find(x=>x.id===editingId);
+    const changes=[];
+    if(t.status!==v.status)changes.push(`状态：${STATUS_TXT[t.status]} → ${STATUS_TXT[v.status]}`);
+    if(t.priority!==v.priority)changes.push(`优先级：${PRI_TXT[t.priority]} → ${PRI_TXT[v.priority]}`);
+    if(t.due!==v.due)changes.push(`截止日期：${t.due||'无'} → ${v.due||'无'}`);
+    if(t.title!==v.title)changes.push('修改了标题');
+    if(t.desc!==v.desc)changes.push('修改了描述');
+    if(t.category!==v.category)changes.push(`分类：${t.category||'未分类'} → ${v.category||'未分类'}`);
+    Object.assign(t,v,{updatedAt:now()});
+    if(changes.length)t.logs.push({time:now(),type:t.status!==v.status?'status':'edit',text:'编辑：'+changes.join('；')});
+    toast('已保存修改');
+  }else{
+    const t={id:uid(),...v,createdAt:now(),updatedAt:now(),
+      logs:[{time:now(),type:'create',text:`创建事务（状态：${STATUS_TXT[v.status]}，优先级：${PRI_TXT[v.priority]}${v.due?'，截止 '+v.due:''}）`}]};
+    tasks.push(t);
+    toast('已添加新事务');
+  }
+  persist();closeModal('editMask');render();
+}
+function quickStatus(id,st){
+  const t=tasks.find(x=>x.id===id);
+  if(!t||t.status===st)return;
+  t.logs.push({time:now(),type:'status',text:`状态变更：${STATUS_TXT[t.status]} → ${STATUS_TXT[st]}`});
+  t.status=st;t.updatedAt=now();
+  persist();render();toast(`「${t.title}」→ ${STATUS_TXT[st]}`);
+}
+
+/* ---------- 详情 / 时间轴 ---------- */
+function openDetail(id){
+  detailId=id;
+  const t=tasks.find(x=>x.id===id); if(!t)return;
+  document.getElementById('dTitle').textContent=t.title;
+  const ds=dueState(t);
+  document.getElementById('dMeta').innerHTML=
+    `<span class="badge s-${t.status}"><span class="dot"></span>${STATUS_TXT[t.status]}</span>
+     <span class="badge p-${t.priority}"><span class="dot"></span>优先级：${PRI_TXT[t.priority]}</span>
+     <span class="cat-badge">📁 ${esc(t.category)||'未分类'}</span>
+     ${t.due?`<span class="cat-badge">📅 截止 ${t.due} ${ds==='overdue'?'<b style="color:var(--danger)">（已逾期）</b>':ds==='today'?'<b style="color:#f97316">（今日截止）</b>':ds==='soon'?'<b style="color:var(--warn)">（临近截止）</b>':''}</span>`:''}
+     <span class="cat-badge">🕐 创建于 ${fmtDT(t.createdAt)}</span>`;
+  document.getElementById('dDesc').textContent=t.desc||'（无描述）';
+  renderTimeline(t);
+  document.getElementById('dNote').value='';
+  document.getElementById('detailMask').classList.add('show');
+}
+function renderTimeline(t){
+  document.getElementById('dTimeline').innerHTML=t.logs.slice().reverse().map(l=>
+    `<div class="tl-item tl-${l.type}"><div class="tl-time">${fmtDT(l.time)}</div><div class="tl-text">${esc(l.text)}</div></div>`).join('');
+}
+function addNote(){
+  const v=document.getElementById('dNote').value.trim();
+  if(!v||!detailId)return;
+  const t=tasks.find(x=>x.id===detailId);
+  t.logs.push({time:now(),type:'note',text:'备注：'+v});
+  t.updatedAt=now();persist();renderTimeline(t);render();
+  document.getElementById('dNote').value='';toast('已记录进展');
+}
+function editFromDetail(){closeModal('detailMask');openEditModal(detailId);}
+function deleteTask(){
+  const t=tasks.find(x=>x.id===detailId);
+  if(!t)return;
+  if(!confirm(`确定删除事务「${t.title}」？此操作不可恢复（建议先导出备份）。`))return;
+  tasks=tasks.filter(x=>x.id!==detailId);
+  persist();closeModal('detailMask');render();toast('已删除');
+}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+
+/* ---------- 导出 / 导入 ---------- */
+function exportData(){
+  const blob=new Blob([JSON.stringify({exportedAt:now(),tasks},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`工作台账备份_${todayStr()}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+  toast('已导出 JSON 备份');
+}
+function importData(ev){
+  const file=ev.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const arr=Array.isArray(data)?data:data.tasks;
+      if(!Array.isArray(arr))throw 0;
+      const mode=tasks.length?confirm('检测到现有台账数据。\n「确定」= 合并导入（跳过重复ID）\n「取消」= 覆盖现有数据'):false;
+      if(mode){
+        const ids=new Set(tasks.map(t=>t.id));let n=0;
+        arr.forEach(t=>{if(t&&t.id&&!ids.has(t.id)){tasks.push(t);n++;}});
+        toast(`合并导入 ${n} 条事务`);
+      }else{
+        tasks=arr;toast(`导入 ${arr.length} 条事务（已覆盖）`);
+      }
+      persist();render();
+    }catch(err){toast('导入失败：文件格式不正确');}
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- 创始账号审核 ---------- */
+async function refreshAuditBadge(){
+  if(curRole!=='founder'){ document.getElementById('btnAudit').style.display='none'; return; }
+  document.getElementById('btnAudit').style.display='';
+  try{
+    const r=await api.pending();
+    const n=(r.pending||[]).length;
+    const b=document.getElementById('auditCount');
+    b.textContent=n; b.style.display=n?'':'none';
+  }catch(e){}
+}
+async function openAudit(){
+  try{
+    const r=await api.pending();
+    const list=r.pending||[];
+    document.getElementById('auditList').innerHTML = list.length
+      ? list.map(a=>`<div class="audit-row"><span>${esc(a.email)}</span><div><button class="btn btn-primary btn-sm" onclick="doApprove('${esc(a.email)}')">通过</button> <button class="btn btn-danger btn-sm" onclick="doReject('${esc(a.email)}')">拒绝</button></div></div>`).join('')
+      : '<div class="empty" style="padding:24px">暂无待审核的申请</div>';
+  }catch(e){ toast(e.message); }
+  document.getElementById('auditMask').classList.add('show');
+}
+async function doApprove(email){ try{ await api.approve(email); toast('已通过：'+email); openAudit(); refreshAuditBadge(); }catch(e){ toast(e.message); } }
+async function doReject(email){ try{ await api.reject(email); toast('已拒绝：'+email); openAudit(); refreshAuditBadge(); }catch(e){ toast(e.message); } }
+
+/* ---------- 账号系统 ---------- */
+async function doLogin(){
+  const e=document.getElementById('lgEmail').value.trim();
+  const p=document.getElementById('lgPwd').value;
+  if(!e||!p){toast('请输入账号和密码');return;}
+  try{
+    const r=await api.login(e,p);
+    authToken=r.token; localStorage.setItem('ledger_token',authToken); curRole=r.role;
+    document.getElementById('lgErr').textContent='';
+    await afterLogin(e);
+  }catch(err){ document.getElementById('lgErr').textContent=err.message; }
+}
+async function doRegister(){
+  const e=document.getElementById('lgEmail').value.trim();
+  const p=document.getElementById('lgPwd').value;
+  if(!e||!p){toast('请输入账号和密码');return;}
+  try{
+    const r=await api.register(e,p);
+    if(r.pending){
+      document.getElementById('lgErr').textContent='';
+      toast(r.msg||'注册申请已提交，等待审核');
+      document.getElementById('lgPwd').value='';
+    }else if(r.ok&&r.token){
+      authToken=r.token; localStorage.setItem('ledger_token',authToken); curRole=r.role;
+      await afterLogin(e);
+    }
+  }catch(err){ document.getElementById('lgErr').textContent=err.message; }
+}
+async function afterLogin(e){
+  document.getElementById('loginMask').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('curUser').textContent=e;
+  await load(); render(); refreshAuditBadge();
+}
+async function logout(){
+  try{ await api.logout(); }catch(e){}
+  authToken=null; curRole=null; tasks=[]; localStorage.removeItem('ledger_token');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('loginMask').classList.remove('hidden');
+  document.getElementById('lgEmail').value=''; document.getElementById('lgPwd').value=''; document.getElementById('lgErr').textContent='';
+}
+
+/* ---------- 初始化 ---------- */
+function enterLocalMode(){
+  backendMode=false;
+  document.getElementById('loginMask').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('btnAudit').style.display='none';
+  document.getElementById('curUser').textContent='本地预览';
+  load().then(()=>render());
+  toast('当前为本地预览模式：数据仅保存在本浏览器');
+}
+async function init(){
+  if(authToken){
+    try{
+      const r=await api.me();
+      curRole=r.role;
+      document.getElementById('loginMask').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('curUser').textContent=r.email;
+      await load(); render(); refreshAuditBadge();
+      return;
+    }catch(e){ authToken=null; localStorage.removeItem('ledger_token'); }
+  }
+  // 探测后端是否可用：后端返回 JSON，静态托管返回 HTML
+  try{
+    const probe=await fetch('/api/me',{headers:{'Content-Type':'application/json'}});
+    backendMode=(probe.headers.get('content-type')||'').includes('application/json');
+  }catch(e){ backendMode=false; }
+  if(backendMode){
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('loginMask').classList.remove('hidden');
+  }else{
+    enterLocalMode();
+  }
+}
+init();
+</script>
+</body>
+</html>
