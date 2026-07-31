@@ -15,7 +15,7 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:"Segoe UI","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
-  .container{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+  .container{max-width:1440px;margin:0 auto;padding:20px 16px 60px}
 
   /* ===== 顶部 ===== */
   header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px}
@@ -68,7 +68,10 @@
   tr.row-done .task-title{text-decoration:line-through;color:var(--muted)}
   .task-title{font-weight:600;font-size:14px}
   .task-desc{color:var(--muted);font-size:12px;margin-top:2px;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .desc-cell{color:var(--muted);font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .desc-cell{color:var(--muted);font-size:13px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ord-cell{font-size:12.5px;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .ord-code{font-weight:600;color:#0f766e}
+  .ord-none{color:#9ca3af}
   .due-cell{white-space:nowrap;font-size:13px}
   .due-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:600}
   .due-tag.overdue{background:var(--danger);color:#fff}
@@ -204,7 +207,7 @@
     <select id="fCategory" onchange="render()"><option value="">全部分类</option></select>
     <label>截止≤ <input type="date" id="fDue" onchange="render()"></label>
     <select id="fSort" onchange="setSortKey(this.value)">
-      <option value="due">按截止日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="desc">按描述</option><option value="category">按分类</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
+      <option value="due">按截止日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="cust">按客户代码</option><option value="prod">按产品类别</option><option value="po">按客户订单号</option><option value="ipo">按内部订单号</option><option value="desc">按描述</option><option value="category">按分类</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
     </select>
     <button class="btn btn-outline btn-sm" id="btnSortDir" onclick="toggleSortDir()" title="切换升序/降序">↑ 升序</button>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fGroup" checked onchange="render()">按分类分组</label>
@@ -221,7 +224,15 @@
   <div class="modal">
     <div class="modal-head"><h3 id="editTitle">新增事务</h3><button class="modal-close" onclick="closeModal('editMask')">✕</button></div>
     <div class="modal-body">
-      <div class="form-group"><label>标题 <span class="req">*</span></label><input id="inTitle" maxlength="60" placeholder="例如：完成季度汇报PPT"></div>
+      <div class="form-group"><label>事务 <span class="req">*</span></label><input id="inTitle" maxlength="60" placeholder="例如：订单跟进、报价数据库搭建"></div>
+      <div class="form-row">
+        <div class="form-group"><label>客户代码</label><input id="inCust" maxlength="30" placeholder="例如：TX05（没有可留空）"></div>
+        <div class="form-group"><label>产品类别</label><input id="inProd" maxlength="20" placeholder="例如：FG / HC / FRP"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>客户订单号</label><input id="inCustPo" maxlength="40" placeholder="例如：DSP31126"></div>
+        <div class="form-group"><label>内部订单号</label><input id="inIntPo" maxlength="40" placeholder="例如：C-SP-W-240900"></div>
+      </div>
       <div class="form-group"><label>描述</label><textarea id="inDesc" placeholder="补充说明、关键要点…"></textarea></div>
       <div class="form-row">
         <div class="form-group"><label>优先级</label>
@@ -387,10 +398,45 @@ function clickStat(k){
   render();
 }
 
+/* ---------- 订单信息解析（客户代码 / 产品类别 / 客户订单号 / 内部订单号） ---------- */
+const RE_TITLE_ORD=/^(.*?)[（(]\s*([^·・]+?)\s*[·・]\s*([^）)]+?)\s*[）)]\s*(.*)$/;
+const RE_INT_PO=/^[A-Za-z]+(-[A-Za-z0-9]+){2,}$/;
+const RE_CUST_PO=/客户订单号[：:]\s*([^\n\r]+)/;
+const _ordCache=new Map();
+function orderInfo(t){
+  const ck=t.id+'|'+(t.updatedAt||'')+'|'+(t.title||'')+'|'+(t.desc||'');
+  const hit=_ordCache.get(ck); if(hit)return hit;
+  let cust=(t.custCode||'').trim(), prod=(t.prodType||'').trim(),
+      po=(t.custPo||'').trim(), ipo=(t.intPo||'').trim(), name=(t.title||'').trim();
+  if(!cust&&!prod&&!po&&!ipo){
+    const m=name.match(RE_TITLE_ORD);
+    if(m){
+      const head=(m[1]||'').trim();
+      cust=(m[2]||'').trim(); prod=(m[3]||'').trim();
+      name=(m[4]||'').trim()||'订单跟进';
+      if(head){ if(RE_INT_PO.test(head)) ipo=head; else po=head; }
+    }
+    if(!po){ const d=(t.desc||'').match(RE_CUST_PO); if(d) po=d[1].trim(); }
+  }
+  const o={name,cust,prod,po,ipo};
+  _ordCache.set(ck,o); if(_ordCache.size>800)_ordCache.clear();
+  return o;
+}
+/* 客户订单号已单独成列，描述里就不再重复展示 */
+function cleanDesc(t){ return (t.desc||'').replace(/客户订单号[：:]\s*[^\n\r]*\r?\n?/,'').trim(); }
+function ordCell(v,strong){
+  if(!v)return '<span class="ord-none">-</span>';
+  return `<span class="${strong?'ord-code':''}">${esc(v)}</span>`;
+}
+
 /* ---------- 渲染台账 ---------- */
 function matchFilters(t){
   const q=document.getElementById('fSearch').value.trim().toLowerCase();
-  if(q&&!((t.title+t.desc+t.category).toLowerCase().includes(q)))return false;
+  if(q){
+    const o=orderInfo(t);
+    const hay=(t.title+t.desc+t.category+o.cust+o.prod+o.po+o.ipo).toLowerCase();
+    if(!hay.includes(q))return false;
+  }
   const h=document.getElementById('fHideDone');
   if(h&&h.checked&&t.status==='done')return false;
   const fs=document.getElementById('fStatus').value; if(fs&&t.status!==fs)return false;
@@ -407,8 +453,14 @@ function sortTasks(arr){
   return arr.slice().sort((a,b)=>{
     let r=0;
     if(s==='priority'){r=PRI_ORDER[a.priority]-PRI_ORDER[b.priority];if(r===0)r=(a.due||'9999').localeCompare(b.due||'9999');}
-    else if(s==='title'){r=(a.title||'').localeCompare((b.title||''),'zh');}
-    else if(s==='desc'){r=(a.desc||'').localeCompare((b.desc||''),'zh');}
+    else if(s==='title'){r=(orderInfo(a).name||'').localeCompare((orderInfo(b).name||''),'zh');}
+    else if(s==='cust'||s==='prod'||s==='po'||s==='ipo'){
+      // 空值恒排在最后（无论升降序）
+      const va=orderInfo(a)[s]||'', vb=orderInfo(b)[s]||'';
+      if(!va&&!vb)r=0; else if(!va)return 1; else if(!vb)return -1;
+      else r=va.localeCompare(vb,'zh',{numeric:true});
+    }
+    else if(s==='desc'){r=cleanDesc(a).localeCompare(cleanDesc(b),'zh');}
     else if(s==='category'){r=(a.category||'').localeCompare((b.category||''),'zh');}
     else if(s==='status'){r=STATUS_ORDER[a.status]-STATUS_ORDER[b.status];}
     else if(s==='created'){r=a.createdAt.localeCompare(b.createdAt);}
@@ -433,9 +485,14 @@ function rowHTML(t){
   if(ds==='overdue')dueTag='<span class="due-tag overdue">已逾期</span>';
   else if(ds==='today')dueTag='<span class="due-tag today">今日截止</span>';
   else if(ds==='soon')dueTag='<span class="due-tag soon">临近截止</span>';
+  const o=orderInfo(t), dsc=cleanDesc(t);
   return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">
-    <td><div class="task-title">${esc(t.title)}</div></td>
-    <td class="hide-sm desc-cell">${t.desc?esc(t.desc):'<span style="color:#9ca3af">—</span>'}</td>
+    <td><div class="task-title">${esc(o.name)}</div></td>
+    <td class="ord-cell">${ordCell(o.cust,true)}</td>
+    <td class="ord-cell">${ordCell(o.prod,true)}</td>
+    <td class="ord-cell hide-sm">${ordCell(o.po)}</td>
+    <td class="ord-cell hide-sm">${ordCell(o.ipo)}</td>
+    <td class="hide-sm desc-cell">${dsc?esc(dsc):'<span style="color:#9ca3af">—</span>'}</td>
     <td class="hide-sm"><span class="cat-badge">${esc(t.category)||'未分类'}</span></td>
     <td><span class="badge p-${t.priority}"><span class="dot"></span>${PRI_TXT[t.priority]}</span></td>
     <td class="due-cell">${t.due||'<span style="color:#9ca3af">—</span>'}${dueTag}</td>
@@ -450,7 +507,7 @@ function rowHTML(t){
   </tr>`;
 }
 function tableHead(){
-  const cols=[{k:'title',t:'事务',c:''},{k:'desc',t:'描述',c:'hide-sm'},{k:'category',t:'分类',c:'hide-sm'},{k:'priority',t:'优先级',c:''},{k:'due',t:'截止日期',c:''},{k:'status',t:'状态',c:''},{k:'updated',t:'最近更新',c:'hide-sm'}];
+  const cols=[{k:'title',t:'事务',c:''},{k:'cust',t:'客户代码',c:''},{k:'prod',t:'产品类别',c:''},{k:'po',t:'客户订单号',c:'hide-sm'},{k:'ipo',t:'内部订单号',c:'hide-sm'},{k:'desc',t:'描述',c:'hide-sm'},{k:'category',t:'分类',c:'hide-sm'},{k:'priority',t:'优先级',c:''},{k:'due',t:'截止日期',c:''},{k:'status',t:'状态',c:''},{k:'updated',t:'最近更新',c:'hide-sm'}];
   return '<thead><tr>'+cols.map(col=>{
     const active=col.k===sortKey;
     const arrow=active?(sortDir==='asc'?' ▲':' ▼'):'';
@@ -498,8 +555,13 @@ function openEditModal(id){
   editingId=id||null;
   document.getElementById('editTitle').textContent=id?'编辑事务':'新增事务';
   const t=id?tasks.find(x=>x.id===id):null;
-  document.getElementById('inTitle').value=t?t.title:'';
-  document.getElementById('inDesc').value=t?t.desc:'';
+  const o=t?orderInfo(t):{name:'',cust:'',prod:'',po:'',ipo:''};
+  document.getElementById('inTitle').value=t?o.name:'';
+  document.getElementById('inCust').value=o.cust||'';
+  document.getElementById('inProd').value=o.prod||'';
+  document.getElementById('inCustPo').value=o.po||'';
+  document.getElementById('inIntPo').value=o.ipo||'';
+  document.getElementById('inDesc').value=t?cleanDesc(t):'';
   document.getElementById('inPriority').value=t?t.priority:'mid';
   document.getElementById('inStatus').value=t?t.status:'todo';
   document.getElementById('inDue').value=t?t.due:'';
@@ -509,8 +571,13 @@ function openEditModal(id){
 }
 function saveTask(){
   const title=document.getElementById('inTitle').value.trim();
-  if(!title){toast('请填写事务标题');return;}
-  const v={title,desc:document.getElementById('inDesc').value.trim(),
+  if(!title){toast('请填写事务名称');return;}
+  const v={title,
+    custCode:document.getElementById('inCust').value.trim(),
+    prodType:document.getElementById('inProd').value.trim(),
+    custPo:document.getElementById('inCustPo').value.trim(),
+    intPo:document.getElementById('inIntPo').value.trim(),
+    desc:document.getElementById('inDesc').value.trim(),
     priority:document.getElementById('inPriority').value,status:document.getElementById('inStatus').value,
     due:document.getElementById('inDue').value,category:document.getElementById('inCategory').value.trim()};
   if(editingId){
@@ -519,8 +586,13 @@ function saveTask(){
     if(t.status!==v.status)changes.push(`状态：${STATUS_TXT[t.status]} → ${STATUS_TXT[v.status]}`);
     if(t.priority!==v.priority)changes.push(`优先级：${PRI_TXT[t.priority]} → ${PRI_TXT[v.priority]}`);
     if(t.due!==v.due)changes.push(`截止日期：${t.due||'无'} → ${v.due||'无'}`);
-    if(t.title!==v.title)changes.push('修改了标题');
-    if(t.desc!==v.desc)changes.push('修改了描述');
+    const o0=orderInfo(t);
+    if(o0.name!==v.title)changes.push('修改了事务名称');
+    if((o0.cust||'')!==v.custCode)changes.push(`客户代码：${o0.cust||'-'} → ${v.custCode||'-'}`);
+    if((o0.prod||'')!==v.prodType)changes.push(`产品类别：${o0.prod||'-'} → ${v.prodType||'-'}`);
+    if((o0.po||'')!==v.custPo)changes.push(`客户订单号：${o0.po||'-'} → ${v.custPo||'-'}`);
+    if((o0.ipo||'')!==v.intPo)changes.push(`内部订单号：${o0.ipo||'-'} → ${v.intPo||'-'}`);
+    if(cleanDesc(t)!==v.desc)changes.push('修改了描述');
     if(t.category!==v.category)changes.push(`分类：${t.category||'未分类'} → ${v.category||'未分类'}`);
     Object.assign(t,v,{updatedAt:now()});
     if(changes.length)t.logs.push({time:now(),type:t.status!==v.status?'status':'edit',text:'编辑：'+changes.join('；')});
@@ -538,22 +610,27 @@ function quickStatus(id,st){
   if(!t||t.status===st)return;
   t.logs.push({time:now(),type:'status',text:`状态变更：${STATUS_TXT[t.status]} → ${STATUS_TXT[st]}`});
   t.status=st;t.updatedAt=now();
-  persist();render();toast(`「${t.title}」→ ${STATUS_TXT[st]}`);
+  persist();render();toast(`「${orderInfo(t).name}」→ ${STATUS_TXT[st]}`);
 }
 
 /* ---------- 详情 / 时间轴 ---------- */
 function openDetail(id){
   detailId=id;
   const t=tasks.find(x=>x.id===id); if(!t)return;
-  document.getElementById('dTitle').textContent=t.title;
+  const od=orderInfo(t);
+  document.getElementById('dTitle').textContent=od.name;
   const ds=dueState(t);
   document.getElementById('dMeta').innerHTML=
     `<span class="badge s-${t.status}"><span class="dot"></span>${STATUS_TXT[t.status]}</span>
      <span class="badge p-${t.priority}"><span class="dot"></span>优先级：${PRI_TXT[t.priority]}</span>
      <span class="cat-badge">📁 ${esc(t.category)||'未分类'}</span>
+     ${od.cust?`<span class="cat-badge">🏷 客户代码：${esc(od.cust)}</span>`:''}
+     ${od.prod?`<span class="cat-badge">📦 产品类别：${esc(od.prod)}</span>`:''}
+     ${od.po?`<span class="cat-badge">🧾 客户订单号：${esc(od.po)}</span>`:''}
+     ${od.ipo?`<span class="cat-badge">🔖 内部订单号：${esc(od.ipo)}</span>`:''}
      ${t.due?`<span class="cat-badge">📅 截止 ${t.due} ${ds==='overdue'?'<b style="color:var(--danger)">（已逾期）</b>':ds==='today'?'<b style="color:#f97316">（今日截止）</b>':ds==='soon'?'<b style="color:var(--warn)">（临近截止）</b>':''}</span>`:''}
      <span class="cat-badge">🕐 创建于 ${fmtDT(t.createdAt)}</span>`;
-  document.getElementById('dDesc').textContent=t.desc||'（无描述）';
+  document.getElementById('dDesc').textContent=cleanDesc(t)||'（无描述）';
   renderTimeline(t);
   document.getElementById('dNote').value='';
   document.getElementById('detailMask').classList.add('show');
@@ -574,7 +651,7 @@ function editFromDetail(){closeModal('detailMask');openEditModal(detailId);}
 function deleteTask(){
   const t=tasks.find(x=>x.id===detailId);
   if(!t)return;
-  if(!confirm(`确定删除事务「${t.title}」？此操作不可恢复（建议先导出备份）。`))return;
+  if(!confirm(`确定删除事务「${orderInfo(t).name}」？此操作不可恢复（建议先导出备份）。`))return;
   tasks=tasks.filter(x=>x.id!==detailId);
   persist();closeModal('detailMask');render();toast('已删除');
 }
