@@ -68,6 +68,7 @@
   tr.row-done .task-title{text-decoration:line-through;color:var(--muted)}
   .task-title{font-weight:600;font-size:14px}
   .task-desc{color:var(--muted);font-size:12px;margin-top:2px;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .desc-cell{color:var(--muted);font-size:13px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .due-cell{white-space:nowrap;font-size:13px}
   .due-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:600}
   .due-tag.overdue{background:var(--danger);color:#fff}
@@ -183,7 +184,7 @@
     <select id="fCategory" onchange="render()"><option value="">全部分类</option></select>
     <label>截止≤ <input type="date" id="fDue" onchange="render()"></label>
     <select id="fSort" onchange="setSortKey(this.value)">
-      <option value="due">按截止日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="category">按分类</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
+      <option value="due">按截止日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="desc">按描述</option><option value="category">按分类</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
     </select>
     <button class="btn btn-outline btn-sm" id="btnSortDir" onclick="toggleSortDir()" title="切换升序/降序">↑ 升序</button>
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fGroup" checked onchange="render()">按分类分组</label>
@@ -370,6 +371,7 @@ function sortTasks(arr){
     let r=0;
     if(s==='priority'){r=PRI_ORDER[a.priority]-PRI_ORDER[b.priority];if(r===0)r=(a.due||'9999').localeCompare(b.due||'9999');}
     else if(s==='title'){r=(a.title||'').localeCompare((b.title||''),'zh');}
+    else if(s==='desc'){r=(a.desc||'').localeCompare((b.desc||''),'zh');}
     else if(s==='category'){r=(a.category||'').localeCompare((b.category||''),'zh');}
     else if(s==='status'){r=STATUS_ORDER[a.status]-STATUS_ORDER[b.status];}
     else if(s==='created'){r=a.createdAt.localeCompare(b.createdAt);}
@@ -395,7 +397,8 @@ function rowHTML(t){
   else if(ds==='today')dueTag='<span class="due-tag today">今日截止</span>';
   else if(ds==='soon')dueTag='<span class="due-tag soon">临近截止</span>';
   return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">
-    <td><div class="task-title">${esc(t.title)}</div>${t.desc?`<div class="task-desc">${esc(t.desc)}</div>`:''}</td>
+    <td><div class="task-title">${esc(t.title)}</div></td>
+    <td class="hide-sm desc-cell">${t.desc?esc(t.desc):'<span style="color:#9ca3af">—</span>'}</td>
     <td class="hide-sm"><span class="cat-badge">${esc(t.category)||'未分类'}</span></td>
     <td><span class="badge p-${t.priority}"><span class="dot"></span>${PRI_TXT[t.priority]}</span></td>
     <td class="due-cell">${t.due||'<span style="color:#9ca3af">—</span>'}${dueTag}</td>
@@ -410,7 +413,7 @@ function rowHTML(t){
   </tr>`;
 }
 function tableHead(){
-  const cols=[{k:'title',t:'事务',c:''},{k:'category',t:'分类',c:'hide-sm'},{k:'priority',t:'优先级',c:''},{k:'due',t:'截止日期',c:''},{k:'status',t:'状态',c:''},{k:'updated',t:'最近更新',c:'hide-sm'}];
+  const cols=[{k:'title',t:'事务',c:''},{k:'desc',t:'描述',c:'hide-sm'},{k:'category',t:'分类',c:'hide-sm'},{k:'priority',t:'优先级',c:''},{k:'due',t:'截止日期',c:''},{k:'status',t:'状态',c:''},{k:'updated',t:'最近更新',c:'hide-sm'}];
   return '<thead><tr>'+cols.map(col=>{
     const active=col.k===sortKey;
     const arrow=active?(sortDir==='asc'?' ▲':' ▼'):'';
