@@ -104,7 +104,15 @@ function getUser(req){
   const m=auth.match(/^Bearer\s+(.+)$/i);
   if(!m) return null;
   const email=db.tokens[m[1]];
-  return email? db.accounts[email]? email : null : null;
+  if(!email) return null;
+  const acc=db.accounts[email];
+  if(!acc) return null;
+  if(acc.status!=='approved') return null;   // 被停用/待审核的账号，已签发的会话立即失效
+  return email;
+}
+// 吊销某账号名下全部登录令牌
+function revokeTokens(target){
+  Object.keys(db.tokens).forEach(t=>{ if(db.tokens[t]===target) delete db.tokens[t]; });
 }
 
 // ---------- 静态文件（仅放行首页，避免源码/数据外泄） ----------
@@ -146,7 +154,9 @@ async function handleApi(req,res,pathname){
     const acc=db.accounts[email];
     if(!acc) return sendJSON(res,401,{error:'账号不存在，请先注册'});
     if(acc.pwd!==hashPwd(password)) return sendJSON(res,401,{error:'密码错误'});
+    if(acc.status==='suspended') return sendJSON(res,403,{error:'该账号已被管理员停用，如需恢复请联系 '+FOUNDER});
     if(acc.status!=='approved') return sendJSON(res,403,{error:'账号待审核',pending:true,msg:'注册申请等待创始账号审核中，请稍后再试'});
+    acc.lastLoginAt=new Date().toISOString();
     return sendJSON(res,200,{ok:true,token:await issueToken(email),email,role:acc.role});
   }
   // 以下接口需要登录
@@ -188,7 +198,53 @@ async function handleApi(req,res,pathname){
     if(pathname==='/api/approve'){
       db.accounts[target].status='approved';
     }else{
-      delete db.accounts[target]; delete db.tokens[target]; delete db.tasks[target];
+      delete db.accounts[target]; revokeTokens(target); delete db.tasks[target];
+    }
+    await saveDB(db);
+    return sendJSON(res,200,{ok:true});
+  }
+
+  // ===== 账号管理（创始账号专属）=====
+  // 全部账号列表
+  if(req.method==='GET'&&pathname==='/api/users'){
+    const list=Object.keys(db.accounts).map(e=>{
+      const a=db.accounts[e];
+      return {
+        email:e,
+        role:a.role||'user',
+        status:a.status||'pending',
+        createdAt:a.createdAt||'',
+        lastLoginAt:a.lastLoginAt||'',
+        taskCount:(db.tasks[e]||[]).length,
+        online:Object.values(db.tokens).includes(e)
+      };
+    }).sort((x,y)=>{
+      if(x.role!==y.role) return x.role==='founder'?-1:1;
+      return (x.createdAt||'').localeCompare(y.createdAt||'');
+    });
+    return sendJSON(res,200,{ok:true,users:list,founder:FOUNDER});
+  }
+  // 停用 / 启用 / 删除 / 重置密码 / 强制下线
+  if(req.method==='POST'&&/^\/api\/user\/(suspend|enable|delete|resetpwd|kick)$/.test(pathname)){
+    let b; try{ b=await readBody(req); }catch(e){ return sendJSON(res,400,{error:e.message}); }
+    const action=pathname.split('/').pop();
+    const target=(b.email||'').trim().toLowerCase();
+    if(!db.accounts[target]) return sendJSON(res,404,{error:'账号不存在'});
+    if(target===FOUNDER) return sendJSON(res,400,{error:'不能对创始账号执行此操作'});
+    const t=db.accounts[target];
+    if(action==='suspend'){
+      if(t.status==='pending') return sendJSON(res,400,{error:'该账号尚未审核通过，请在「审核注册」中处理'});
+      t.status='suspended'; revokeTokens(target);
+    }else if(action==='enable'){
+      t.status='approved';
+    }else if(action==='kick'){
+      revokeTokens(target);
+    }else if(action==='delete'){
+      delete db.accounts[target]; revokeTokens(target); delete db.tasks[target];
+    }else if(action==='resetpwd'){
+      const np=b.password||'';
+      if(!/^\d{6,}$/.test(np)) return sendJSON(res,400,{error:'新密码须为 6 位或以上数字'});
+      t.pwd=hashPwd(np); revokeTokens(target);
     }
     await saveDB(db);
     return sendJSON(res,200,{ok:true});

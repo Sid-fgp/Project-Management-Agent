@@ -134,6 +134,25 @@
   .audit-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
   .audit-row span{font-size:13px;word-break:break-all}
 
+  /* 账号管理 */
+  .modal.modal-wide{max-width:840px}
+  .um-table{width:100%;border-collapse:collapse;font-size:13px}
+  .um-table th{text-align:left;padding:8px 10px;background:#f8fafc;color:var(--muted);font-weight:600;font-size:12px;border-bottom:1px solid var(--border);white-space:nowrap}
+  .um-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .um-table tr:last-child td{border-bottom:none}
+  .um-mail{word-break:break-all;font-weight:500}
+  .um-tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;white-space:nowrap}
+  .um-tag.ok{background:#dcfce7;color:#166534}
+  .um-tag.wait{background:#fef3c7;color:#92400e}
+  .um-tag.stop{background:#fee2e2;color:#991b1b}
+  .um-tag.founder{background:#ede9fe;color:#5b21b6}
+  .um-tag.user{background:#e0f2fe;color:#075985}
+  .um-tag.online{background:#dcfce7;color:#166534}
+  .um-ops{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .um-sum{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:12px}
+  .um-sum b{color:var(--text);font-size:14px}
+  @media (max-width:720px){ .um-table .um-hide{display:none} }
+
   @media (max-width:720px){
     .task-table .hide-sm{display:none}
     .form-row{flex-direction:column;gap:0}
@@ -161,6 +180,7 @@
     <div class="header-actions">
       <span class="cur-user" id="curUser"></span>
       <button class="btn btn-outline btn-sm" id="btnAudit" style="display:none" onclick="openAudit()">🛡 审核注册 <span class="pending-badge" id="auditCount" style="display:none">0</span></button>
+      <button class="btn btn-outline btn-sm" id="btnUsers" style="display:none" onclick="openUsers()">👥 账号管理</button>
       <button class="btn btn-outline btn-sm" onclick="logout()">退出</button>
       <button class="btn btn-outline" onclick="exportData()">⬇ 导出数据</button>
       <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">⬆ 导入数据</button>
@@ -257,6 +277,21 @@
   </div>
 </div>
 
+<!-- 账号管理弹窗（管理者账号） -->
+<div class="modal-mask" id="usersMask">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h3>👥 账号管理（管理者）</h3><button class="modal-close" onclick="closeModal('usersMask')">✕</button></div>
+    <div class="modal-body">
+      <div class="um-sum" id="umSum"></div>
+      <div id="usersList"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="openUsers()">🔄 刷新</button>
+      <button class="btn btn-primary" onclick="closeModal('usersMask')">关闭</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- 登录界面 -->
@@ -303,6 +338,8 @@ const api={
   pending:()=>apiReq('/pending'),
   approve:(e)=>apiReq('/approve',{method:'POST',body:JSON.stringify({email:e})}),
   reject:(e)=>apiReq('/reject',{method:'POST',body:JSON.stringify({email:e})}),
+  users:()=>apiReq('/users'),
+  userOp:(act,e,extra)=>apiReq('/user/'+act,{method:'POST',body:JSON.stringify(Object.assign({email:e},extra||{}))}),
   getTasks:()=>apiReq('/tasks'),
   saveTasks:(arr)=>apiReq('/tasks',{method:'PUT',body:JSON.stringify(arr)}),
 };
@@ -597,8 +634,99 @@ async function openAudit(){
   }catch(e){ toast(e.message); }
   document.getElementById('auditMask').classList.add('show');
 }
-async function doApprove(email){ try{ await api.approve(email); toast('已通过：'+email); openAudit(); refreshAuditBadge(); }catch(e){ toast(e.message); } }
+async function doApprove(email){ try{ await api.approve(email); toast('已通过：'+email); openAudit(); refreshAuditBadge(); refreshUsersBtn(); }catch(e){ toast(e.message); } }
 async function doReject(email){ try{ await api.reject(email); toast('已拒绝：'+email); openAudit(); refreshAuditBadge(); }catch(e){ toast(e.message); } }
+
+/* ---------- 账号管理（管理者账号） ---------- */
+function refreshUsersBtn(){
+  document.getElementById('btnUsers').style.display = (curRole==='founder') ? '' : 'none';
+}
+function umDate(s){
+  if(!s) return '—';
+  const d=new Date(s); if(isNaN(d)) return '—';
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+const UM_STATUS={approved:{t:'正常',c:'ok'},pending:{t:'待审核',c:'wait'},suspended:{t:'已停用',c:'stop'}};
+
+async function openUsers(){
+  const box=document.getElementById('usersList');
+  box.innerHTML='<div class="empty" style="padding:24px">加载中…</div>';
+  document.getElementById('usersMask').classList.add('show');
+  try{
+    const r=await api.users();
+    const list=r.users||[];
+    const nOk=list.filter(u=>u.status==='approved').length;
+    const nWait=list.filter(u=>u.status==='pending').length;
+    const nStop=list.filter(u=>u.status==='suspended').length;
+    const nOn=list.filter(u=>u.online).length;
+    document.getElementById('umSum').innerHTML=
+      `<span>账号总数 <b>${list.length}</b></span><span>正常 <b>${nOk}</b></span>`+
+      `<span>待审核 <b>${nWait}</b></span><span>已停用 <b>${nStop}</b></span><span>当前在线 <b>${nOn}</b></span>`;
+
+    box.innerHTML = list.length ? `<table class="um-table">
+      <thead><tr>
+        <th>账号</th><th>角色</th><th>状态</th>
+        <th class="um-hide">事项数</th><th class="um-hide">注册时间</th><th class="um-hide">最近登录</th>
+        <th style="text-align:right">操作</th>
+      </tr></thead><tbody>${list.map(u=>umRow(u)).join('')}</tbody></table>` :
+      '<div class="empty" style="padding:24px">暂无账号</div>';
+  }catch(e){
+    box.innerHTML='<div class="empty" style="padding:24px">加载失败：'+esc(e.message)+'</div>';
+  }
+}
+function umRow(u){
+  const st=UM_STATUS[u.status]||{t:u.status,c:'wait'};
+  const isFounder=u.role==='founder';
+  const em=esc(u.email);
+  let ops='';
+  if(isFounder){
+    ops='<span style="color:var(--muted);font-size:12px">管理者本人</span>';
+  }else if(u.status==='pending'){
+    ops=`<button class="btn btn-primary btn-sm" onclick="umOp('approve','${em}')">通过</button>`+
+        `<button class="btn btn-danger btn-sm" onclick="umOp('delete','${em}')">删除</button>`;
+  }else{
+    ops = (u.status==='suspended')
+      ? `<button class="btn btn-primary btn-sm" onclick="umOp('enable','${em}')">启用</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="umOp('suspend','${em}')">停用</button>`;
+    if(u.online) ops+=`<button class="btn btn-outline btn-sm" onclick="umOp('kick','${em}')">强制下线</button>`;
+    ops+=`<button class="btn btn-outline btn-sm" onclick="umOp('resetpwd','${em}')">重置密码</button>`+
+         `<button class="btn btn-danger btn-sm" onclick="umOp('delete','${em}')">删除</button>`;
+  }
+  return `<tr>
+    <td class="um-mail">${em} ${u.online?'<span class="um-tag online">在线</span>':''}</td>
+    <td><span class="um-tag ${isFounder?'founder':'user'}">${isFounder?'管理者':'普通用户'}</span></td>
+    <td><span class="um-tag ${st.c}">${st.t}</span></td>
+    <td class="um-hide">${u.taskCount}</td>
+    <td class="um-hide">${umDate(u.createdAt)}</td>
+    <td class="um-hide">${umDate(u.lastLoginAt)}</td>
+    <td><div class="um-ops">${ops}</div></td>
+  </tr>`;
+}
+async function umOp(action,email){
+  try{
+    if(action==='approve'){
+      await api.approve(email); toast('已通过：'+email);
+    }else if(action==='delete'){
+      if(!confirm(`确定删除账号 ${email} 吗？\n该账号名下的所有事项数据将一并永久删除，无法恢复。`)) return;
+      await api.userOp('delete',email); toast('已删除：'+email);
+    }else if(action==='resetpwd'){
+      const np=prompt(`为 ${email} 设置新密码（6 位或以上数字）：`,'');
+      if(np===null) return;
+      if(!/^\d{6,}$/.test(np)){ toast('密码须为 6 位或以上数字'); return; }
+      await api.userOp('resetpwd',email,{password:np});
+      toast('密码已重置，该账号需重新登录');
+    }else if(action==='suspend'){
+      if(!confirm(`确定停用 ${email} 吗？\n停用后该账号将无法登录，数据保留，可随时启用。`)) return;
+      await api.userOp('suspend',email); toast('已停用：'+email);
+    }else if(action==='enable'){
+      await api.userOp('enable',email); toast('已启用：'+email);
+    }else if(action==='kick'){
+      await api.userOp('kick',email); toast('已强制下线：'+email);
+    }
+    openUsers(); refreshAuditBadge();
+  }catch(e){ toast(e.message); }
+}
 
 /* ---------- 账号系统 ---------- */
 async function doLogin(){
@@ -632,7 +760,7 @@ async function afterLogin(e){
   document.getElementById('loginMask').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('curUser').textContent=e;
-  await load(); render(); refreshAuditBadge();
+  await load(); render(); refreshAuditBadge(); refreshUsersBtn();
 }
 async function logout(){
   try{ await api.logout(); }catch(e){}
@@ -648,6 +776,7 @@ function enterLocalMode(){
   document.getElementById('loginMask').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('btnAudit').style.display='none';
+  document.getElementById('btnUsers').style.display='none';
   document.getElementById('curUser').textContent='本地预览';
   load().then(()=>render());
   toast('当前为本地预览模式：数据仅保存在本浏览器');
@@ -660,7 +789,7 @@ async function init(){
       document.getElementById('loginMask').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
       document.getElementById('curUser').textContent=r.email;
-      await load(); render(); refreshAuditBadge();
+      await load(); render(); refreshAuditBadge(); refreshUsersBtn();
       return;
     }catch(e){ authToken=null; localStorage.removeItem('ledger_token'); }
   }
