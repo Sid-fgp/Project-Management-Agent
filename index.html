@@ -58,7 +58,7 @@
   .group-header .count{background:var(--primary-light);color:var(--primary-dark);border-radius:99px;padding:1px 10px;font-size:12px;font-weight:600}
   .group-header .gdone{color:var(--muted);font-size:12px;font-weight:400}
   .task-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
-  .task-table th{background:#f8fafc;text-align:left;padding:9px 12px;font-size:12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+  .task-table th{background:#f8fafc;text-align:center;padding:9px 12px;font-size:12px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
   .task-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
   .task-table tr:last-child td{border-bottom:none}
   .task-table tbody tr{transition:background .12s;cursor:pointer}
@@ -95,11 +95,15 @@
   .pri-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-weight:600}
   .pri-select.p-high{color:var(--danger)} .pri-select.p-mid{color:#f97316} .pri-select.p-low{color:#16a34a}
   /* 圆形字母优先级徽标：高=亮红(H) / 中=亮黄(M) / 低=绿(L)，白字 */
-  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.15);transition:transform .08s}
-  .pri-badge:active{transform:scale(.92)}
-  .pri-badge.p-high{background:#ef4444}
-  .pri-badge.p-mid{background:#f5b400}
-  .pri-badge.p-low{background:#22c55e}
+  /* 圆形字母优先级徽标（3D 立体球形效果） */
+  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;
+    text-shadow:0 1px 1px rgba(0,0,0,.45);
+    box-shadow:0 3px 6px rgba(0,0,0,.35), inset 0 -3px 6px rgba(0,0,0,.40), inset 0 3px 6px rgba(255,255,255,.60);
+    transition:transform .08s, box-shadow .08s}
+  .pri-badge:active{transform:translateY(1px) scale(.94);box-shadow:0 1px 2px rgba(0,0,0,.35), inset 0 -2px 4px rgba(0,0,0,.40), inset 0 2px 4px rgba(255,255,255,.55)}
+  .pri-badge.p-high{background:radial-gradient(circle at 32% 26%, #ffb3b3 0%, #ef4444 52%, #b91c1c 100%)}
+  .pri-badge.p-mid{background:radial-gradient(circle at 32% 26%, #ffe98a 0%, #f5b400 52%, #b45309 100%)}
+  .pri-badge.p-low{background:radial-gradient(circle at 32% 26%, #9af3bb 0%, #22c55e 52%, #15803d 100%)}
   .date-input{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-family:inherit}
   .date-input.date-overdue{border-color:var(--danger);background:#fef2f2;color:var(--danger);font-weight:600}
   .date-input.date-today{border-color:#f97316;background:#fff7ed;color:#f97316;font-weight:600}
@@ -571,7 +575,7 @@ function tableHead(forGroup){
   return '<thead><tr>'+cols.map(col=>{
     const active=col.k===sortKey;
     const arrow=active?(sortDir==="asc"?" ▲":" ▼"):"";
-    return `<th class="${col.c}" style="cursor:pointer;user-select:none" onclick="sortBy('${col.k}')" title="点击切换排序">${col.t}${arrow}</th>`;
+    return `<th class="${col.c}" style="cursor:pointer;user-select:none;text-align:center" onclick="sortBy('${col.k}')" title="点击切换排序">${col.t}${arrow}</th>`;
   }).join('')+'</tr></thead>';
 }
 function render(){
