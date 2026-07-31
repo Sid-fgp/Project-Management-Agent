@@ -129,6 +129,17 @@ function serveStatic(req,res){
 
 // ---------- API 路由 ----------
 async function handleApi(req,res,pathname){
+  // 健康检查 / 存储模式自检（无需登录）
+  if(req.method==='GET'&&pathname==='/api/health'){
+    return sendJSON(res,200,{
+      ok:true,
+      store: usePg ? 'postgres' : 'file',
+      persistent: usePg,
+      note: usePg ? '已连接 Postgres，重部署数据不丢失' : '本地文件模式，重部署数据会重置',
+      accounts: Object.keys(db.accounts||{}).length,
+      time: new Date().toISOString()
+    });
+  }
   // 注册
   if(req.method==='POST'&&pathname==='/api/register'){
     let b; try{ b=await readBody(req); }catch(e){ return sendJSON(res,400,{error:e.message}); }
