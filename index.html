@@ -478,6 +478,61 @@ function sortBy(k){
   updateSortDirBtn(); render();
 }
 function updateSortDirBtn(){ const b=document.getElementById('btnSortDir'); if(b)b.textContent=sortDir==='asc'?'↑ 升序':'↓ 降序'; }
+function cellHTML(t,k,o,dsc,dueTag){
+  switch(k){
+    case 'title':   return `<td><div class="task-title">${esc(o.name)}</div></td>`;
+    case 'cust':    return `<td class="ord-cell">${ordCell(o.cust,true)}</td>`;
+    case 'prod':    return `<td class="ord-cell">${ordCell(o.prod,true)}</td>`;
+    case 'po':      return `<td class="ord-cell hide-sm">${ordCell(o.po)}</td>`;
+    case 'ipo':     return `<td class="ord-cell hide-sm">${ordCell(o.ipo)}</td>`;
+    case 'desc':    return `<td class="hide-sm desc-cell">${dsc?esc(dsc):'<span style="color:#9ca3af">—</span>'}</td>`;
+    case 'category':return `<td class="hide-sm"><span class="cat-badge">${esc(t.category)||'未分类'}</span></td>`;
+    case 'priority':return `<td><span class="badge p-${t.priority}"><span class="dot"></span>${PRI_TXT[t.priority]}</span></td>`;
+    case 'due':     return `<td class="due-cell">${t.due||'<span style="color:#9ca3af">—</span>'}${dueTag}</td>`;
+    case 'status':  return `<td onclick="event.stopPropagation()"><select class="status-select" onchange="quickStatus('${t.id}',this.value)"><option value="todo" ${t.status==='todo'?'selected':''}>待办</option><option value="doing" ${t.status==='doing'?'selected':''}>进行中</option><option value="done" ${t.status==='done'?'selected':''}>已完成</option></select></td>`;
+    case 'updated': return `<td class="hide-sm" style="color:var(--muted);font-size:12px;white-space:nowrap">${fmtDT(t.updatedAt)}</td>`;
+    default:        return `<td></td>`;
+  }
+}
+// 每个分组的列定义（顺序即显示顺序）。销售订单：删除「事务」，内部订单号→客户订单号→客户代码→产品类别 前置；综合事务：保持原 6 列；非分组（全部）视图：保留完整列
+function colsForGroup(forGroup){
+  if(forGroup==="销售订单"){
+    return [
+      {k:"ipo",t:"内部订单号",c:"hide-sm"},
+      {k:"po",t:"客户订单号",c:"hide-sm"},
+      {k:"cust",t:"客户代码",c:""},
+      {k:"prod",t:"产品类别",c:""},
+      {k:"desc",t:"描述",c:"hide-sm"},
+      {k:"priority",t:"优先级",c:""},
+      {k:"due",t:"截止日期",c:""},
+      {k:"status",t:"状态",c:""},
+      {k:"updated",t:"最近更新",c:"hide-sm"}
+    ];
+  }
+  if(forGroup==="综合事务"){
+    return [
+      {k:"title",t:"事务",c:""},
+      {k:"desc",t:"描述",c:"hide-sm"},
+      {k:"priority",t:"优先级",c:""},
+      {k:"due",t:"截止日期",c:""},
+      {k:"status",t:"状态",c:""},
+      {k:"updated",t:"最近更新",c:"hide-sm"}
+    ];
+  }
+  return [
+    {k:"title",t:"事务",c:""},
+    {k:"cust",t:"客户代码",c:""},
+    {k:"prod",t:"产品类别",c:""},
+    {k:"po",t:"客户订单号",c:"hide-sm"},
+    {k:"ipo",t:"内部订单号",c:"hide-sm"},
+    {k:"desc",t:"描述",c:"hide-sm"},
+    {k:"category",t:"分类",c:"hide-sm"},
+    {k:"priority",t:"优先级",c:""},
+    {k:"due",t:"截止日期",c:""},
+    {k:"status",t:"状态",c:""},
+    {k:"updated",t:"最近更新",c:"hide-sm"}
+  ];
+}
 function rowHTML(t,forGroup){
   const ds=dueState(t);
   let rowCls=t.status==='done'?'row-done':(ds==='overdue'?'row-overdue':(ds==='soon'||ds==='today')?'row-soon':'');
@@ -486,33 +541,11 @@ function rowHTML(t,forGroup){
   else if(ds==='today')dueTag='<span class="due-tag today">今日截止</span>';
   else if(ds==='soon')dueTag='<span class="due-tag soon">临近截止</span>';
   const o=orderInfo(t), dsc=cleanDesc(t);
-  const hideOrd=forGroup==="综合事务", hideCat=!!forGroup;
-  const ordCols=hideOrd?'':`<td class="ord-cell">${ordCell(o.cust,true)}</td>
-    <td class="ord-cell">${ordCell(o.prod,true)}</td>
-    <td class="ord-cell hide-sm">${ordCell(o.po)}</td>
-    <td class="ord-cell hide-sm">${ordCell(o.ipo)}</td>`;
-  const catCol=hideCat?'':`<td class="hide-sm"><span class="cat-badge">${esc(t.category)||'未分类'}</span></td>`;
-  return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">
-    <td><div class="task-title">${esc(o.name)}</div></td>
-    ${ordCols}
-    <td class="hide-sm desc-cell">${dsc?esc(dsc):'<span style="color:#9ca3af">—</span>'}</td>
-    ${catCol}
-    <td><span class="badge p-${t.priority}"><span class="dot"></span>${PRI_TXT[t.priority]}</span></td>
-    <td class="due-cell">${t.due||'<span style="color:#9ca3af">—</span>'}${dueTag}</td>
-    <td onclick="event.stopPropagation()">
-      <select class="status-select" onchange="quickStatus('${t.id}',this.value)">
-        <option value="todo" ${t.status==='todo'?'selected':''}>待办</option>
-        <option value="doing" ${t.status==='doing'?'selected':''}>进行中</option>
-        <option value="done" ${t.status==='done'?'selected':''}>已完成</option>
-      </select>
-    </td>
-    <td class="hide-sm" style="color:var(--muted);font-size:12px;white-space:nowrap">${fmtDT(t.updatedAt)}</td>
-  </tr>`;
+  const cols=colsForGroup(forGroup);
+  return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">`+cols.map(c=>cellHTML(t,c.k,o,dsc,dueTag)).join('')+`</tr>`;
 }
 function tableHead(forGroup){
-  const hideOrd=forGroup==="综合事务";
-  const allCols=[{k:"title",t:"事务",c:""},{k:"cust",t:"客户代码",c:"",hide:hideOrd},{k:"prod",t:"产品类别",c:"",hide:hideOrd},{k:"po",t:"客户订单号",c:"hide-sm",hide:hideOrd},{k:"ipo",t:"内部订单号",c:"hide-sm",hide:hideOrd},{k:"desc",t:"描述",c:"hide-sm"},{k:"category",t:"分类",c:"hide-sm",hide:!!forGroup},{k:"priority",t:"优先级",c:""},{k:"due",t:"截止日期",c:""},{k:"status",t:"状态",c:""},{k:"updated",t:"最近更新",c:"hide-sm"}];
-  const cols=allCols.filter(c=>!c.hide);
+  const cols=colsForGroup(forGroup);
   return '<thead><tr>'+cols.map(col=>{
     const active=col.k===sortKey;
     const arrow=active?(sortDir==="asc"?" ▲":" ▼"):"";
