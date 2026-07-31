@@ -95,15 +95,16 @@
   .pri-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-weight:600}
   .pri-select.p-high{color:var(--danger)} .pri-select.p-mid{color:#f97316} .pri-select.p-low{color:#16a34a}
   /* 圆形字母优先级徽标：高=亮红(H) / 中=亮黄(M) / 低=绿(L)，白字 */
-  /* 圆形字母优先级徽标（3D 立体球形效果） */
-  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;
-    text-shadow:0 1px 1px rgba(0,0,0,.45);
-    box-shadow:0 3px 6px rgba(0,0,0,.35), inset 0 -3px 6px rgba(0,0,0,.40), inset 0 3px 6px rgba(255,255,255,.60);
+  /* 圆形字母优先级徽标（新拟态凸起 + 同色描边） */
+  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;box-sizing:border-box;border-radius:50%;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;
+    background:linear-gradient(145deg,#f4f5f7,#e6e8ea);
+    border:2px solid currentColor;
+    box-shadow:3px 3px 6px rgba(0,0,0,.13), -2px -2px 5px rgba(255,255,255,.75);
     transition:transform .08s, box-shadow .08s}
-  .pri-badge:active{transform:translateY(1px) scale(.94);box-shadow:0 1px 2px rgba(0,0,0,.35), inset 0 -2px 4px rgba(0,0,0,.40), inset 0 2px 4px rgba(255,255,255,.55)}
-  .pri-badge.p-high{background:radial-gradient(circle at 32% 26%, #ffb3b3 0%, #ef4444 52%, #b91c1c 100%)}
-  .pri-badge.p-mid{background:radial-gradient(circle at 32% 26%, #ffe98a 0%, #f5b400 52%, #b45309 100%)}
-  .pri-badge.p-low{background:radial-gradient(circle at 32% 26%, #9af3bb 0%, #22c55e 52%, #15803d 100%)}
+  .pri-badge:active{transform:translateY(1px) scale(.94);box-shadow:1px 1px 3px rgba(0,0,0,.13), -1px -1px 3px rgba(255,255,255,.7)}
+  .pri-badge.p-high{color:#dc2626}
+  .pri-badge.p-mid{color:#d97706}
+  .pri-badge.p-low{color:#16a34a}
   .date-input{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-family:inherit}
   .date-input.date-overdue{border-color:var(--danger);background:#fef2f2;color:var(--danger);font-weight:600}
   .date-input.date-today{border-color:#f97316;background:#fff7ed;color:#f97316;font-weight:600}
