@@ -95,16 +95,12 @@
   .pri-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-weight:600}
   .pri-select.p-high{color:var(--danger)} .pri-select.p-mid{color:#f97316} .pri-select.p-low{color:#16a34a}
   /* 圆形字母优先级徽标：高=亮红(H) / 中=亮黄(M) / 低=绿(L)，白字 */
-  /* 圆形字母优先级徽标（新拟态凸起 + 同色描边） */
-  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;box-sizing:border-box;border-radius:50%;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;
-    background:linear-gradient(145deg,#f4f5f7,#e6e8ea);
-    border:2px solid currentColor;
-    box-shadow:3px 3px 6px rgba(0,0,0,.13), -2px -2px 5px rgba(255,255,255,.75);
-    transition:transform .08s, box-shadow .08s}
-  .pri-badge:active{transform:translateY(1px) scale(.94);box-shadow:1px 1px 3px rgba(0,0,0,.13), -1px -1px 3px rgba(255,255,255,.7)}
-  .pri-badge.p-high{color:#dc2626}
-  .pri-badge.p-mid{color:#d97706}
-  .pri-badge.p-low{color:#16a34a}
+  /* 圆形字母优先级徽标（扁平实心） */
+  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;box-sizing:border-box;border-radius:50%;color:#fff;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;transition:transform .08s}
+  .pri-badge:active{transform:translateY(1px) scale(.94)}
+  .pri-badge.p-high{background:#ef4444}
+  .pri-badge.p-mid{background:#f5b400}
+  .pri-badge.p-low{background:#22c55e}
   .date-input{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-family:inherit}
   .date-input.date-overdue{border-color:var(--danger);background:#fef2f2;color:var(--danger);font-weight:600}
   .date-input.date-today{border-color:#f97316;background:#fff7ed;color:#f97316;font-weight:600}
@@ -497,16 +493,18 @@ function sortBy(k){
   updateSortDirBtn(); render();
 }
 function updateSortDirBtn(){ const b=document.getElementById('btnSortDir'); if(b)b.textContent=sortDir==='asc'?'↑ 升序':'↓ 降序'; }
-function cellHTML(t,k,o,dsc,dueTag){
-  switch(k){
-    case 'title':   return `<td><div class="task-title">${esc(o.name)}</div></td>`;
-    case 'cust':    return `<td class="ord-cell">${ordCell(o.cust,true)}</td>`;
-    case 'prod':    return `<td class="ord-cell">${ordCell(o.prod,true)}</td>`;
-    case 'po':      return `<td class="ord-cell hide-sm">${ordCell(o.po)}</td>`;
-    case 'ipo':     return `<td class="ord-cell hide-sm">${ordCell(o.ipo)}</td>`;
-    case 'desc':    return `<td class="hide-sm desc-cell">${dsc?esc(dsc):'<span style="color:#9ca3af">—</span>'}</td>`;
-    case 'category':return `<td class="hide-sm"><span class="cat-badge">${esc(t.category)||'未分类'}</span></td>`;
-    case 'priority':{const pm={high:'H',mid:'M',low:'L'};return `<td onclick="event.stopPropagation()"><span class="pri-badge p-${t.priority}" title="点击切换优先级（当前：${PRI_TXT[t.priority]}）" onclick="cyclePriority('${t.id}')">${pm[t.priority]}</span></td>`;}
+function cellHTML(t,col,o,dsc,dueTag){
+  const AL=col.align==='left'?'left':'center';
+  const td=(extra,inner)=>`<td ${extra} style="text-align:${AL}">${inner}</td>`;
+  switch(col.k){
+    case 'title':   return td('',`<div class="task-title">${esc(o.name)}</div>`);
+    case 'cust':    return td('class="ord-cell"',ordCell(o.cust,true));
+    case 'prod':    return td('class="ord-cell"',ordCell(o.prod,true));
+    case 'po':      return td('class="ord-cell hide-sm"',ordCell(o.po));
+    case 'ipo':     return td('class="ord-cell hide-sm"',ordCell(o.ipo));
+    case 'desc':    return td('class="hide-sm desc-cell"',dsc?esc(dsc):'<span style="color:#9ca3af">—</span>');
+    case 'category':return td('class="hide-sm"',`<span class="cat-badge">${esc(t.category)||'未分类'}</span>`);
+    case 'priority':return td('onclick="event.stopPropagation()"',`<span class="pri-badge p-${t.priority}" title="点击切换优先级（当前：${PRI_TXT[t.priority]}）" onclick="cyclePriority('${t.id}')">${{high:'H',mid:'M',low:'L'}[t.priority]}</span>`);
     case 'due': {
       const ds=dueState(t);
       let tag='';
@@ -514,22 +512,22 @@ function cellHTML(t,k,o,dsc,dueTag){
       else if(ds==='today')tag='<span class="due-tag today">今日回顾</span>';
       else if(ds==='soon')tag='<span class="due-tag soon">临近回顾</span>';
       const cls=(t.due&&ds==='overdue')?'date-overdue':(t.due&&ds==='today')?'date-today':'';
-      return `<td class="due-cell" onclick="event.stopPropagation()"><input type="date" class="date-input ${cls}" value="${t.due||''}" onchange="quickReview('${t.id}',this.value)" title="点击修改回顾日期">${tag}</td>`;
+      return td('class="due-cell" onclick="event.stopPropagation()"',`<input type="date" class="date-input ${cls}" value="${t.due||''}" onchange="quickReview('${t.id}',this.value)" title="点击修改回顾日期">${tag}`);
     }
-    case 'status':  return `<td onclick="event.stopPropagation()"><select class="status-select" onchange="quickStatus('${t.id}',this.value)"><option value="todo" ${t.status==='todo'?'selected':''}>待办</option><option value="doing" ${t.status==='doing'?'selected':''}>进行中</option><option value="done" ${t.status==='done'?'selected':''}>已完成</option></select></td>`;
-    case 'updated': return `<td class="hide-sm" style="color:var(--muted);font-size:12px;white-space:nowrap">${fmtDT(t.updatedAt)}</td>`;
-    default:        return `<td></td>`;
+    case 'status':  return td('onclick="event.stopPropagation()"',`<select class="status-select" onchange="quickStatus('${t.id}',this.value)"><option value="todo" ${t.status==='todo'?'selected':''}>待办</option><option value="doing" ${t.status==='doing'?'selected':''}>进行中</option><option value="done" ${t.status==='done'?'selected':''}>已完成</option></select>`);
+    case 'updated': return td('class="hide-sm"',`<span style="color:var(--muted);font-size:12px;white-space:nowrap">${fmtDT(t.updatedAt)}</span>`);
+    default:        return td('','');
   }
 }
-// 每个分组的列定义（顺序即显示顺序）。销售订单：删除「事务」，内部订单号→客户订单号→客户代码→产品类别 前置；综合事务：保持原 6 列；非分组（全部）视图：保留完整列
+// 每个分组的列定义（顺序即显示顺序）。align:'left' 表示左对齐（例外列），其余默认居中。
 function colsForGroup(forGroup){
   if(forGroup==="销售订单"){
     return [
-      {k:"ipo",t:"内部订单号",c:"hide-sm"},
-      {k:"po",t:"客户订单号",c:"hide-sm"},
+      {k:"ipo",t:"内部订单号",c:"hide-sm",align:"left"},
+      {k:"po",t:"客户订单号",c:"hide-sm",align:"left"},
       {k:"cust",t:"客户代码",c:""},
       {k:"prod",t:"产品类别",c:""},
-      {k:"desc",t:"描述",c:"hide-sm"},
+      {k:"desc",t:"描述",c:"hide-sm",align:"left"},
       {k:"priority",t:"优先级",c:""},
       {k:"due",t:"回顾日期",c:""},
       {k:"status",t:"状态",c:""},
@@ -538,8 +536,8 @@ function colsForGroup(forGroup){
   }
   if(forGroup==="综合事务"){
     return [
-      {k:"title",t:"事务",c:""},
-      {k:"desc",t:"描述",c:"hide-sm"},
+      {k:"title",t:"事务",c:"",align:"left"},
+      {k:"desc",t:"描述",c:"hide-sm",align:"left"},
       {k:"priority",t:"优先级",c:""},
       {k:"due",t:"回顾日期",c:""},
       {k:"status",t:"状态",c:""},
@@ -547,17 +545,17 @@ function colsForGroup(forGroup){
     ];
   }
   return [
-    {k:"title",t:"事务",c:""},
-    {k:"cust",t:"客户代码",c:""},
-    {k:"prod",t:"产品类别",c:""},
-    {k:"po",t:"客户订单号",c:"hide-sm"},
-    {k:"ipo",t:"内部订单号",c:"hide-sm"},
-    {k:"desc",t:"描述",c:"hide-sm"},
-    {k:"category",t:"分类",c:"hide-sm"},
-    {k:"priority",t:"优先级",c:""},
-    {k:"due",t:"回顾日期",c:""},
-    {k:"status",t:"状态",c:""},
-    {k:"updated",t:"最近更新",c:"hide-sm"}
+    {k:"title",t:"事务",c:"",align:"left"},
+    {k:"cust",t:"客户代码",c:"",align:"left"},
+    {k:"prod",t:"产品类别",c:"",align:"left"},
+    {k:"po",t:"客户订单号",c:"hide-sm",align:"left"},
+    {k:"ipo",t:"内部订单号",c:"hide-sm",align:"left"},
+    {k:"desc",t:"描述",c:"hide-sm",align:"left"},
+    {k:"category",t:"分类",c:"hide-sm",align:"left"},
+    {k:"priority",t:"优先级",c:"",align:"left"},
+    {k:"due",t:"回顾日期",c:"",align:"left"},
+    {k:"status",t:"状态",c:"",align:"left"},
+    {k:"updated",t:"最近更新",c:"hide-sm",align:"left"}
   ];
 }
 function rowHTML(t,forGroup){
@@ -569,7 +567,7 @@ function rowHTML(t,forGroup){
   else if(ds==='soon')dueTag='<span class="due-tag soon">临近截止</span>';
   const o=orderInfo(t), dsc=cleanDesc(t);
   const cols=colsForGroup(forGroup);
-  return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">`+cols.map(c=>cellHTML(t,c.k,o,dsc,dueTag)).join('')+`</tr>`;
+  return `<tr class="${rowCls}" onclick="openDetail('${t.id}')">`+cols.map(c=>cellHTML(t,c,o,dsc,dueTag)).join('')+`</tr>`;
 }
 function tableHead(forGroup){
   const cols=colsForGroup(forGroup);
