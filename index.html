@@ -722,15 +722,18 @@ function render(){
     const list=sortTasks(tasks.filter(t=>t.category===name && matchFilters(t,key)), key);
     const box=document.getElementById('body-'+key);
     const toolbar=document.getElementById('toolbar-'+key);
+    box.innerHTML='';
+    const done=list.filter(t=>t.status==='done').length;
+    const count=list.length;
+    const header=document.createElement('div');
+    header.className='group-header';
+    header.innerHTML=`📁 ${esc(name)} <span class="count">${count}</span><span class="gdone">已完成 ${done}/${count}</span>`;
+    box.appendChild(header);
+    if(toolbar)box.appendChild(toolbar);
     if(!list.length){
-      box.innerHTML=`<div class="group-header">📁 ${esc(name)} <span class="count">0</span><span class="gdone">已完成 0/0</span></div>`;
-      if(toolbar)box.appendChild(toolbar);
-      box.innerHTML+=`<div class="empty" style="padding:36px 20px"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`;
+      box.insertAdjacentHTML('beforeend',`<div class="empty" style="padding:36px 20px"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`);
     }else{
-      const done=list.filter(t=>t.status==='done').length;
-      box.innerHTML=`<div class="group-header">📁 ${esc(name)} <span class="count">${list.length}</span><span class="gdone">已完成 ${done}/${list.length}</span></div>`;
-      if(toolbar)box.appendChild(toolbar);
-      box.innerHTML+=`<table class="task-table">${tableHead(name,key)}<tbody>${list.map(t=>rowHTML(t,name)).join('')}</tbody></table>`;
+      box.insertAdjacentHTML('beforeend',`<table class="task-table">${tableHead(name,key)}<tbody>${list.map(t=>rowHTML(t,name)).join('')}</tbody></table>`);
     }
   });
 
