@@ -62,7 +62,8 @@
 
   /* ===== 分组与表格 ===== */
   .group-block{margin-bottom:18px}
-  .group-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:600;font-size:15px}
+  .group-body .toolbar{margin:10px 0 12px}
+  .group-header{display:flex;align-items:center;gap:8px;margin-bottom:0;font-weight:600;font-size:15px}
   .group-header .count{background:var(--primary-light);color:var(--primary-dark);border-radius:99px;padding:1px 10px;font-size:12px;font-weight:600}
   .group-header .gdone{color:var(--muted);font-size:12px;font-weight:400}
   .task-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
@@ -250,50 +251,53 @@
   <!-- 统计卡片（点击可筛选） -->
   <div class="stats" id="stats"></div>
 
-  <!-- 台账列表：销售订单 -->
+  <!-- 台账列表 -->
   <div id="ledger">
     <div class="group-block">
-      <div class="toolbar" id="toolbar-sales">
-        <input type="text" id="fSearch-sales" placeholder="🔍 搜索标题 / 描述 / 分类…" oninput="render()">
-        <select id="fStatus-sales" onchange="render()">
-          <option value="">全部状态</option><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option>
-        </select>
-        <select id="fPriority-sales" onchange="render()">
-          <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
-        </select>
-        <select id="fCategory-sales" onchange="render()"><option value="">全部分类</option></select>
-        <label>回顾≤ <input type="date" id="fDue-sales" onchange="render()"></label>
-        <select id="fSort-sales" onchange="setSortKey('sales',this.value)">
-          <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="cust">按客户代码</option><option value="prod">按产品类别</option><option value="po">按客户订单号</option><option value="ipo">按内部订单号</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
-        </select>
-        <button class="btn btn-outline btn-sm" id="btnSortDir-sales" onclick="toggleSortDir('sales')" title="切换升序/降序">↑ 升序</button>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone-sales" onchange="render()">隐藏已完成</label>
-        <button class="btn btn-outline btn-sm" onclick="resetFilters('sales')">重置</button>
-      </div>
       <div class="group-body" id="body-sales"></div>
     </div>
 
-    <!-- 台账列表：综合事务 -->
     <div class="group-block">
-      <div class="toolbar" id="toolbar-general">
-        <input type="text" id="fSearch-general" placeholder="🔍 搜索标题 / 描述 / 分类…" oninput="render()">
-        <select id="fStatus-general" onchange="render()">
-          <option value="">全部状态</option><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option>
-        </select>
-        <select id="fPriority-general" onchange="render()">
-          <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
-        </select>
-        <select id="fCategory-general" onchange="render()"><option value="">全部分类</option></select>
-        <label>回顾≤ <input type="date" id="fDue-general" onchange="render()"></label>
-        <select id="fSort-general" onchange="setSortKey('general',this.value)">
-          <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
-        </select>
-        <button class="btn btn-outline btn-sm" id="btnSortDir-general" onclick="toggleSortDir('general')" title="切换升序/降序">↑ 升序</button>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone-general" onchange="render()">隐藏已完成</label>
-        <button class="btn btn-outline btn-sm" onclick="resetFilters('general')">重置</button>
-      </div>
       <div class="group-body" id="body-general"></div>
     </div>
+  </div>
+</div>
+
+<!-- 工具栏池：由 render() 插入到各表格标题下方 -->
+<div id="toolbarPool" style="display:none">
+  <div class="toolbar" id="toolbar-sales">
+    <input type="text" id="fSearch-sales" placeholder="🔍 搜索标题 / 描述 / 分类…" oninput="render()">
+    <select id="fStatus-sales" onchange="render()">
+      <option value="">全部状态</option><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option>
+    </select>
+    <select id="fPriority-sales" onchange="render()">
+      <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
+    </select>
+    <select id="fCategory-sales" onchange="render()"><option value="">全部分类</option></select>
+    <label>回顾≤ <input type="date" id="fDue-sales" onchange="render()"></label>
+    <select id="fSort-sales" onchange="setSortKey('sales',this.value)">
+      <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="cust">按客户代码</option><option value="prod">按产品类别</option><option value="po">按客户订单号</option><option value="ipo">按内部订单号</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
+    </select>
+    <button class="btn btn-outline btn-sm" id="btnSortDir-sales" onclick="toggleSortDir('sales')" title="切换升序/降序">↑ 升序</button>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone-sales" onchange="render()">隐藏已完成</label>
+    <button class="btn btn-outline btn-sm" onclick="resetFilters('sales')">重置</button>
+  </div>
+  <div class="toolbar" id="toolbar-general">
+    <input type="text" id="fSearch-general" placeholder="🔍 搜索标题 / 描述 / 分类…" oninput="render()">
+    <select id="fStatus-general" onchange="render()">
+      <option value="">全部状态</option><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option>
+    </select>
+    <select id="fPriority-general" onchange="render()">
+      <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
+    </select>
+    <select id="fCategory-general" onchange="render()"><option value="">全部分类</option></select>
+    <label>回顾≤ <input type="date" id="fDue-general" onchange="render()"></label>
+    <select id="fSort-general" onchange="setSortKey('general',this.value)">
+      <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
+    </select>
+    <button class="btn btn-outline btn-sm" id="btnSortDir-general" onclick="toggleSortDir('general')" title="切换升序/降序">↑ 升序</button>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone-general" onchange="render()">隐藏已完成</label>
+    <button class="btn btn-outline btn-sm" onclick="resetFilters('general')">重置</button>
   </div>
 </div>
 
@@ -717,11 +721,16 @@ function render(){
     const fsEl=document.getElementById('fSort-'+key); if(fsEl)fsEl.value=state.sortKey;
     const list=sortTasks(tasks.filter(t=>t.category===name && matchFilters(t,key)), key);
     const box=document.getElementById('body-'+key);
+    const toolbar=document.getElementById('toolbar-'+key);
     if(!list.length){
-      box.innerHTML=`<div class="empty" style="padding:36px 20px"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`;
+      box.innerHTML=`<div class="group-header">📁 ${esc(name)} <span class="count">0</span><span class="gdone">已完成 0/0</span></div>`;
+      if(toolbar)box.appendChild(toolbar);
+      box.innerHTML+=`<div class="empty" style="padding:36px 20px"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`;
     }else{
       const done=list.filter(t=>t.status==='done').length;
-      box.innerHTML=`<div class="group-header">📁 ${esc(name)} <span class="count">${list.length}</span><span class="gdone">已完成 ${done}/${list.length}</span></div><table class="task-table">${tableHead(name,key)}<tbody>${list.map(t=>rowHTML(t,name)).join('')}</tbody></table>`;
+      box.innerHTML=`<div class="group-header">📁 ${esc(name)} <span class="count">${list.length}</span><span class="gdone">已完成 ${done}/${list.length}</span></div>`;
+      if(toolbar)box.appendChild(toolbar);
+      box.innerHTML+=`<table class="task-table">${tableHead(name,key)}<tbody>${list.map(t=>rowHTML(t,name)).join('')}</tbody></table>`;
     }
   });
 
