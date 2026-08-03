@@ -124,6 +124,12 @@
   .form-group{margin-bottom:14px;flex:1}
   .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:600}
   .form-group label .req{color:var(--danger)}
+  /* 新增事务：大类选择器 */
+  .cat-chooser{display:flex;gap:10px}
+  .cat-opt{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;transition:all .12s}
+  .cat-opt:hover{border-color:#94a3b8}
+  .cat-opt.active{border-color:var(--primary);background:#eef4ff;color:var(--primary)}
+  .ord-fields{border:1px dashed var(--border);border-radius:10px;padding:12px 12px 2px;margin-bottom:4px;background:#fafbfc}
   .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:var(--text)}
   .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
   .form-group textarea{resize:vertical;min-height:64px}
@@ -240,14 +246,22 @@
   <div class="modal">
     <div class="modal-head"><h3 id="editTitle">新增事务</h3><button class="modal-close" onclick="closeModal('editMask')">✕</button></div>
     <div class="modal-body">
-      <div class="form-group"><label>事务 <span class="req">*</span></label><input id="inTitle" maxlength="60" placeholder="例如：订单跟进、报价数据库搭建"></div>
-      <div class="form-row">
-        <div class="form-group"><label>客户代码</label><input id="inCust" maxlength="30" placeholder="例如：TX05（没有可留空）"></div>
-        <div class="form-group"><label>产品类别</label><input id="inProd" maxlength="20" placeholder="例如：FG / HC / FRP"></div>
+      <div class="form-group"><label>事务大类 <span class="req">*</span></label>
+        <div class="cat-chooser">
+          <button type="button" class="cat-opt" data-cat="销售订单" onclick="chooseCat('销售订单')">📦 销售订单</button>
+          <button type="button" class="cat-opt" data-cat="综合事务" onclick="chooseCat('综合事务')">🗂️ 综合事务</button>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>客户订单号</label><input id="inCustPo" maxlength="40" placeholder="例如：DSP31126"></div>
-        <div class="form-group"><label>内部订单号</label><input id="inIntPo" maxlength="40" placeholder="例如：C-SP-W-240900"></div>
+      <div class="form-group" id="fgTitle"><label>事务 <span class="req">*</span></label><input id="inTitle" maxlength="60" placeholder="例如：订单跟进、报价数据库搭建"></div>
+      <div class="ord-fields" id="ordFields">
+        <div class="form-row">
+          <div class="form-group"><label>客户代码</label><input id="inCust" maxlength="30" placeholder="例如：TX05（没有可留空）"></div>
+          <div class="form-group"><label>产品类别</label><input id="inProd" maxlength="20" placeholder="例如：FG / HC / FRP"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>客户订单号</label><input id="inCustPo" maxlength="40" placeholder="例如：DSP31126"></div>
+          <div class="form-group"><label>内部订单号 <span class="req">*</span></label><input id="inIntPo" maxlength="40" placeholder="例如：C-SP-W-240900"></div>
+        </div>
       </div>
       <div class="form-group"><label>描述</label><textarea id="inDesc" placeholder="补充说明、关键要点…"></textarea></div>
       <div class="form-row">
@@ -258,10 +272,7 @@
           <select id="inStatus"><option value="todo">待办</option><option value="doing">进行中</option><option value="done">已完成</option></select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label>回顾日期</label><input type="date" id="inDue"></div>
-        <div class="form-group"><label>项目 / 分类</label><input id="inCategory" list="catList" maxlength="20" placeholder="例如：A项目、日常行政"><datalist id="catList"></datalist></div>
-      </div>
+      <div class="form-group"><label>回顾日期</label><input type="date" id="inDue"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeModal('editMask')">取消</button>
@@ -346,6 +357,7 @@ let authToken=localStorage.getItem('ledger_token')||null;
 let curRole=null;
 let backendMode=true;            // 探测到后端API时为true；否则退化为本地单人模式
 let editingId=null, detailId=null, statFilter='';
+let modalCategory='销售订单';     // 新增/编辑时选中的事务大类（销售订单 / 综合事务）
 let sortKey='due', sortDir='asc';
 
 /* ---------- API 层 ---------- */
@@ -615,7 +627,6 @@ function refreshCategoryOptions(){
   const cats=[...new Set(tasks.map(t=>t.category).filter(Boolean))].sort();
   const sel=document.getElementById('fCategory'),cur=sel.value;
   sel.innerHTML='<option value="">全部分类</option>'+cats.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('');
-  document.getElementById('catList').innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join('');
 }
 function resetFilters(){
   ['fSearch','fDue'].forEach(id=>document.getElementById(id).value='');
@@ -624,11 +635,24 @@ function resetFilters(){
 }
 
 /* ---------- 新增 / 编辑 ---------- */
+function chooseCat(cat){
+  modalCategory=cat;
+  document.querySelectorAll('#editMask .cat-opt').forEach(b=>b.classList.toggle('active', b.dataset.cat===cat));
+  const isSales=cat==='销售订单';
+  document.getElementById('fgTitle').style.display=isSales?'none':'';
+  document.getElementById('ordFields').style.display=isSales?'':'none';
+}
 function openEditModal(id){
   editingId=id||null;
   document.getElementById('editTitle').textContent=id?'编辑事务':'新增事务';
   const t=id?tasks.find(x=>x.id===id):null;
   const o=t?orderInfo(t):{name:'',cust:'',prod:'',po:'',ipo:''};
+  const initCat=id?(t&&t.category==='销售订单'?'销售订单':'综合事务'):'销售订单';
+  modalCategory=initCat;
+  document.querySelectorAll('#editMask .cat-opt').forEach(b=>b.classList.toggle('active', b.dataset.cat===initCat));
+  const isSales=initCat==='销售订单';
+  document.getElementById('fgTitle').style.display=isSales?'none':'';
+  document.getElementById('ordFields').style.display=isSales?'':'none';
   document.getElementById('inTitle').value=t?o.name:'';
   document.getElementById('inCust').value=o.cust||'';
   document.getElementById('inProd').value=o.prod||'';
@@ -638,21 +662,27 @@ function openEditModal(id){
   document.getElementById('inPriority').value=t?t.priority:'mid';
   document.getElementById('inStatus').value=t?t.status:'todo';
   document.getElementById('inDue').value=t?t.due:'';
-  document.getElementById('inCategory').value=t?t.category:'';
   document.getElementById('editMask').classList.add('show');
-  setTimeout(()=>document.getElementById('inTitle').focus(),50);
+  setTimeout(()=>{ const f=isSales?document.getElementById('inIntPo'):document.getElementById('inTitle'); if(f)f.focus(); },50);
 }
 function saveTask(){
-  const title=document.getElementById('inTitle').value.trim();
-  if(!title){toast('请填写事务名称');return;}
-  const v={title,
-    custCode:document.getElementById('inCust').value.trim(),
-    prodType:document.getElementById('inProd').value.trim(),
-    custPo:document.getElementById('inCustPo').value.trim(),
-    intPo:document.getElementById('inIntPo').value.trim(),
+  const cat=modalCategory, isSales=cat==='销售订单';
+  let title, custCode='', prodType='', custPo='', intPo='';
+  if(isSales){
+    intPo=document.getElementById('inIntPo').value.trim();
+    if(!intPo){toast('请填写内部订单号');return;}
+    custCode=document.getElementById('inCust').value.trim();
+    prodType=document.getElementById('inProd').value.trim();
+    custPo=document.getElementById('inCustPo').value.trim();
+    title=`${intPo}（${custCode||'—'}·${prodType||'—'}）订单跟进`;
+  }else{
+    title=document.getElementById('inTitle').value.trim();
+    if(!title){toast('请填写事务名称');return;}
+  }
+  const v={title,custCode,prodType,custPo,intPo,
     desc:document.getElementById('inDesc').value.trim(),
     priority:document.getElementById('inPriority').value,status:document.getElementById('inStatus').value,
-    due:document.getElementById('inDue').value,category:document.getElementById('inCategory').value.trim()};
+    due:document.getElementById('inDue').value,category:cat};
   if(editingId){
     const t=tasks.find(x=>x.id===editingId);
     const changes=[];
