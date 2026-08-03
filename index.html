@@ -195,18 +195,38 @@
   }
   /* ===== 登录 ===== */
   #app.hidden{display:none}
-  .login-mask{position:fixed;inset:0;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px}
-  .login-mask.hidden{display:none}
-  .login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.25);text-align:center}
-  .login-logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-size:28px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
-  .login-card h2{font-size:19px;margin-bottom:4px}
-  .login-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
-  .login-card input{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:14px;margin-bottom:12px;outline:none;box-sizing:border-box}
-  .login-card input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
-  .login-btn{width:100%;justify-content:center;margin-bottom:10px}
-  .login-err{color:var(--danger);font-size:12px;min-height:16px;margin-bottom:6px}
-  .login-ok{color:var(--success);font-size:12px;min-height:16px;margin-bottom:6px}
-  .login-hint{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.5}
+  /* ===== 认证页：登录（蓝紫）/ 注册（绿青）双独立页面 ===== */
+  .auth-mask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:300;padding:16px;transition:opacity .25s}
+  .auth-mask.show{display:flex;animation:authFade .28s ease}
+  @keyframes authFade{from{opacity:0}to{opacity:1}}
+  .auth-card{background:#fff;border-radius:18px;padding:34px 30px;width:100%;max-width:380px;box-shadow:0 24px 60px rgba(0,0,0,.28);text-align:center;animation:authPop .32s cubic-bezier(.2,.8,.3,1.2);position:relative;overflow:hidden}
+  @keyframes authPop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+  .auth-card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px}
+  .auth-logo{width:58px;height:58px;border-radius:16px;color:#fff;font-size:28px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+  .auth-title{font-size:20px;margin:0 0 4px}
+  .auth-sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+  .auth-input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:14px;margin-bottom:13px;outline:none;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
+  .auth-input:focus{box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+  .auth-btn{width:100%;justify-content:center;margin-bottom:12px;padding:11px 14px;font-size:14px}
+  .auth-err{color:var(--danger);font-size:12px;min-height:16px;margin-bottom:6px}
+  .auth-ok{color:var(--success);font-size:12px;min-height:16px;margin-bottom:6px}
+  .auth-switch{background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;margin:2px 0 10px;padding:4px}
+  .auth-switch b{color:var(--primary)}
+  .auth-switch:hover b{text-decoration:underline}
+  .auth-hint{color:var(--muted);font-size:12px;margin:6px 0 0;line-height:1.5}
+  /* 登录页：蓝紫 */
+  .auth-login{background:linear-gradient(135deg,#3b82f6,#8b5cf6)}
+  .auth-card-login::before{background:linear-gradient(90deg,#3b82f6,#8b5cf6)}
+  .auth-logo-login{background:linear-gradient(135deg,#3b82f6,#8b5cf6);box-shadow:0 6px 16px rgba(99,102,241,.35)}
+  .auth-card-login .auth-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+  /* 注册页：绿青（与登录页明显区分） */
+  .auth-register{background:linear-gradient(135deg,#10b981,#0ea5e9)}
+  .auth-card-register::before{background:linear-gradient(90deg,#10b981,#0ea5e9)}
+  .auth-logo-register{background:linear-gradient(135deg,#10b981,#0ea5e9);box-shadow:0 6px 16px rgba(16,185,129,.35)}
+  .auth-card-register .auth-input:focus{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+  .auth-btn-register{background:linear-gradient(135deg,#10b981,#0ea5e9);box-shadow:0 6px 16px rgba(16,185,129,.3)}
+  .auth-btn-register:active{box-shadow:0 3px 8px rgba(16,185,129,.25)}
+  .auth-card-register .auth-switch b{color:#0d9488}
   .cur-user{font-size:13px;color:var(--muted);background:var(--primary-light);padding:5px 10px;border-radius:99px;margin-right:2px}
 </style>
 </head>
@@ -368,19 +388,36 @@
 
 <div id="toast"></div>
 
-<!-- 登录界面 -->
-<div class="login-mask" id="loginMask">
-  <div class="login-card">
-    <div class="login-logo">📋</div>
-    <h2>销售订单管理台账</h2>
-    <p class="login-sub">登录或注册后查看你的专属台账</p>
-    <input type="text" id="lgEmail" placeholder="账号（邮箱）" autocomplete="username">
-    <input type="password" id="lgPwd" placeholder="密码（6 位或以上数字）" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    <div class="login-err" id="lgErr"></div>
-    <div class="login-ok" id="lgOk" style="display:none"></div>
-    <button class="btn btn-primary login-btn" id="btnLogin" onclick="doLogin()">登录</button>
-    <button class="btn btn-outline login-btn" id="btnRegister" onclick="doRegister()">注册新账号</button>
-    <p class="login-hint">新账号注册后需经创始账号 <b>sidfeng@summit-pines.com</b> 审核通过，方可登录。</p>
+<!-- ===== 登录界面（蓝紫主色） ===== -->
+<div class="auth-mask auth-login show" id="loginMask">
+  <div class="auth-card auth-card-login">
+    <div class="auth-logo auth-logo-login">📋</div>
+    <h2 class="auth-title">销售订单管理台账</h2>
+    <p class="auth-sub">登录以查看你的专属台账</p>
+    <input type="text" id="lgEmail" class="auth-input" placeholder="账号（邮箱）" autocomplete="username">
+    <input type="password" id="lgPwd" class="auth-input" placeholder="密码（6 位或以上数字）" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="auth-err" id="lgErr"></div>
+    <div class="auth-ok" id="lgOk" style="display:none"></div>
+    <button class="btn btn-primary auth-btn" id="btnLogin" onclick="doLogin()">登录</button>
+    <button class="auth-switch" onclick="showRegister()">还没有账号？<b>注册新账号</b></button>
+    <p class="auth-hint">新账号注册后需经创始账号 <b>sidfeng@summit-pines.com</b> 审核通过，方可登录。</p>
+  </div>
+</div>
+
+<!-- ===== 注册界面（绿青主色，独立于登录页） ===== -->
+<div class="auth-mask auth-register" id="registerMask">
+  <div class="auth-card auth-card-register">
+    <div class="auth-logo auth-logo-register">✨</div>
+    <h2 class="auth-title">创建你的账号</h2>
+    <p class="auth-sub">填写以下信息，开启你的台账管理</p>
+    <input type="text" id="rgName" class="auth-input" placeholder="用户名（昵称，可选）" autocomplete="nickname">
+    <input type="text" id="rgEmail" class="auth-input" placeholder="账号邮箱" autocomplete="email">
+    <input type="password" id="rgPwd" class="auth-input" placeholder="密码（6 位或以上数字）" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+    <input type="password" id="rgPwd2" class="auth-input" placeholder="确认密码" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+    <div class="auth-err" id="rgErr"></div>
+    <div class="auth-ok" id="rgOk" style="display:none"></div>
+    <button class="btn auth-btn auth-btn-register" id="btnRegister" onclick="doRegister()">注册</button>
+    <button class="auth-switch" onclick="showLogin()">已有账号？<b>返回登录</b></button>
   </div>
 </div>
 
@@ -432,7 +469,7 @@ async function apiReq(p,opts={}){
   }finally{ clearTimeout(timer); }
 }
 const api={
-  register:(e,p)=>apiReq('/register',{method:'POST',body:JSON.stringify({email:e,password:p})}),
+  register:(e,p,name)=>apiReq('/register',{method:'POST',body:JSON.stringify({email:e,password:p,name:name||''})}),
   login:(e,p)=>apiReq('/login',{method:'POST',body:JSON.stringify({email:e,password:p})}),
   logout:()=>apiReq('/logout',{method:'POST'}),
   me:()=>apiReq('/me'),
@@ -1085,49 +1122,67 @@ async function umOp(action,email,btn){
 }
 
 /* ---------- 账号系统 ---------- */
+function showLogin(){ document.getElementById('loginMask').classList.add('show'); document.getElementById('registerMask').classList.remove('show'); }
+function showRegister(){ document.getElementById('registerMask').classList.add('show'); document.getElementById('loginMask').classList.remove('show'); }
+function hideAuth(){ document.getElementById('loginMask').classList.remove('show'); document.getElementById('registerMask').classList.remove('show'); }
 function showLoginOk(msg){
   const el=document.getElementById('lgOk');
+  el.textContent=msg; el.style.display='block';
+}
+function showRegisterOk(msg){
+  const el=document.getElementById('rgOk');
   el.textContent=msg; el.style.display='block';
 }
 function clearLoginMsg(){
   document.getElementById('lgErr').textContent='';
   const ok=document.getElementById('lgOk'); ok.textContent=''; ok.style.display='none';
 }
+function clearRegisterMsg(){
+  document.getElementById('rgErr').textContent='';
+  const ok=document.getElementById('rgOk'); ok.textContent=''; ok.style.display='none';
+}
 async function doLogin(){
   const e=document.getElementById('lgEmail').value.trim();
   const p=document.getElementById('lgPwd').value;
   if(!e||!p){toast('请输入账号和密码');return;}
   const btn=document.getElementById('btnLogin');
-  btn.disabled=true; btn.textContent='登录中…';
+  setBtnLoading(btn,true,'登录中…');
   try{
     clearLoginMsg();
     const r=await api.login(e,p);
     authToken=r.token; localStorage.setItem('ledger_token',authToken); curRole=r.role;
     await afterLogin(e);
   }catch(err){ document.getElementById('lgErr').textContent=err.message; }
-  finally{ btn.disabled=false; btn.textContent='登录'; }
+  finally{ setBtnLoading(btn,false,'登录'); }
 }
 async function doRegister(){
-  const e=document.getElementById('lgEmail').value.trim();
-  const p=document.getElementById('lgPwd').value;
-  if(!e||!p){toast('请输入账号和密码');return;}
+  const name=document.getElementById('rgName').value.trim();
+  const e=document.getElementById('rgEmail').value.trim();
+  const p=document.getElementById('rgPwd').value;
+  const p2=document.getElementById('rgPwd2').value;
+  clearRegisterMsg();
+  if(!e){ document.getElementById('rgErr').textContent='请输入账号邮箱'; return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){ document.getElementById('rgErr').textContent='账号须为有效邮箱'; return; }
+  if(!/^\d{6,}$/.test(p)){ document.getElementById('rgErr').textContent='密码须为 6 位或以上数字'; return; }
+  if(p!==p2){ document.getElementById('rgErr').textContent='两次输入的密码不一致'; return; }
   const btn=document.getElementById('btnRegister');
-  btn.disabled=true; btn.textContent='提交中…';
+  setBtnLoading(btn,true,'提交中…');
   try{
-    clearLoginMsg();
-    const r=await api.register(e,p);
+    const r=await api.register(e,p,name);
     if(r.pending){
-      showLoginOk(r.msg||'注册申请已提交，等待审核');
-      document.getElementById('lgPwd').value='';
+      showRegisterOk(r.msg||'注册申请已提交，等待审核');
+      document.getElementById('rgPwd').value=''; document.getElementById('rgPwd2').value='';
+      toast('注册申请已提交，等待审核');
+      setTimeout(()=>showLogin(), 1400);
     }else if(r.ok&&r.token){
       authToken=r.token; localStorage.setItem('ledger_token',authToken); curRole=r.role;
       await afterLogin(e);
     }
-  }catch(err){ document.getElementById('lgErr').textContent=err.message; }
-  finally{ btn.disabled=false; btn.textContent='注册新账号'; }
+  }catch(err){ document.getElementById('rgErr').textContent=err.message; }
+  finally{ setBtnLoading(btn,false,'注册'); }
 }
 async function afterLogin(e){
-  document.getElementById('loginMask').classList.add('hidden');
+  hideAuth();
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('curUser').textContent=e;
   await load(); render(); refreshAuditBadge(); refreshUsersBtn();
@@ -1139,16 +1194,16 @@ async function logout(){
   try{ await api.logout(); }catch(e){}
   authToken=null; curRole=null; tasks=[]; localStorage.removeItem('ledger_token');
   document.getElementById('app').classList.add('hidden');
-  document.getElementById('loginMask').classList.remove('hidden');
   document.getElementById('lgEmail').value=''; document.getElementById('lgPwd').value='';
   clearLoginMsg();
+  showLogin();
   btn.disabled=false; btn.textContent=origText;
 }
 
 /* ---------- 初始化 ---------- */
 function enterLocalMode(){
   backendMode=false;
-  document.getElementById('loginMask').classList.add('hidden');
+  hideAuth();
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('btnAudit').style.display='none';
   document.getElementById('btnUsers').style.display='none';
@@ -1161,7 +1216,7 @@ async function init(){
     try{
       const r=await api.me();
       curRole=r.role;
-      document.getElementById('loginMask').classList.add('hidden');
+      hideAuth();
       document.getElementById('app').classList.remove('hidden');
       document.getElementById('curUser').textContent=r.email;
       await load(); render(); refreshAuditBadge(); refreshUsersBtn(); maybeNotifyOnLoad();
@@ -1175,7 +1230,7 @@ async function init(){
   }catch(e){ backendMode=false; }
   if(backendMode){
     document.getElementById('app').classList.add('hidden');
-    document.getElementById('loginMask').classList.remove('hidden');
+    showLogin();
   }else{
     enterLocalMode();
   }
