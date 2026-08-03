@@ -27,8 +27,9 @@
 
   /* ===== 统计卡片 ===== */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s, box-shadow .15s}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s, box-shadow .15s;user-select:none}
   .stat-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .stat-card:active{transform:translateY(0) scale(.97)}
   .stat-card.active{outline:2px solid var(--primary)}
   .stat-card .num{font-size:26px;font-weight:700}
   .stat-card .label{color:var(--muted);font-size:13px;margin-top:2px}
@@ -47,12 +48,17 @@
   .toolbar label{color:var(--muted);font-size:12px}
 
   /* ===== 按钮 ===== */
-  .btn{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:opacity .15s}
-  .btn:hover{opacity:.85}
-  .btn-primary{background:var(--primary);color:#fff}
+  .btn{position:relative;padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:all .12s;user-select:none;overflow:hidden;white-space:nowrap}
+  .btn:hover{opacity:.88;transform:translateY(-1px)}
+  .btn:active{transform:translateY(0) scale(.97)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-primary{background:var(--primary);color:#fff;box-shadow:0 2px 6px rgba(59,130,246,.25)}
+  .btn-primary:active{box-shadow:0 1px 3px rgba(59,130,246,.2)}
   .btn-outline{background:#fff;color:var(--text);border:1px solid var(--border)}
   .btn-danger{background:var(--danger-light);color:var(--danger);border:1px solid #fecaca}
   .btn-sm{padding:4px 9px;font-size:12px;border-radius:6px}
+  .btn .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
   /* ===== 分组与表格 ===== */
   .group-block{margin-bottom:18px}
@@ -93,13 +99,16 @@
   .pending-badge{background:var(--danger);color:#fff;margin-left:4px;padding:0 7px;border-radius:99px;font-size:11px}
 
   /* 状态快捷切换 */
-  .status-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer}
-  .pri-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-weight:600}
+  .status-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;transition:transform .08s}
+  .status-select:active{transform:scale(.96)}
+  .pri-select{padding:3px 6px;border-radius:6px;border:1px solid var(--border);font-size:12px;background:#fff;cursor:pointer;font-weight:600;transition:transform .08s}
+  .pri-select:active{transform:scale(.96)}
   .pri-select.p-high{color:var(--danger)} .pri-select.p-mid{color:#f97316} .pri-select.p-low{color:#16a34a}
   /* 圆形字母优先级徽标：高=亮红(H) / 中=亮黄(M) / 低=绿(L)，白字 */
   /* 圆形字母优先级徽标（扁平实心） */
-  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;box-sizing:border-box;border-radius:50%;color:#fff;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;transition:transform .08s}
-  .pri-badge:active{transform:translateY(1px) scale(.94)}
+  .pri-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;box-sizing:border-box;border-radius:50%;color:#fff;font-weight:800;font-size:13px;line-height:1;cursor:pointer;user-select:none;transition:transform .08s, box-shadow .12s;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+  .pri-badge:hover{box-shadow:0 2px 5px rgba(0,0,0,.2)}
+  .pri-badge:active{transform:translateY(1px) scale(.92);box-shadow:0 1px 2px rgba(0,0,0,.15)}
   .pri-badge.p-high{background:#ef4444}
   .pri-badge.p-mid{background:#f5b400}
   .pri-badge.p-low{background:#22c55e}
@@ -118,7 +127,9 @@
   @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
   .modal-head h3{font-size:16px}
-  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;transition:all .12s;border-radius:6px;padding:2px 6px}
+  .modal-close:hover{background:#f1f5f9;color:var(--text)}
+  .modal-close:active{transform:scale(.9)}
   .modal-body{padding:18px 20px}
   .form-row{display:flex;gap:12px}
   .form-group{margin-bottom:14px;flex:1}
@@ -126,9 +137,10 @@
   .form-group label .req{color:var(--danger)}
   /* 新增事务：大类选择器 */
   .cat-chooser{display:flex;gap:10px}
-  .cat-opt{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;transition:all .12s}
-  .cat-opt:hover{border-color:#94a3b8}
-  .cat-opt.active{border-color:var(--primary);background:#eef4ff;color:var(--primary)}
+  .cat-opt{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;transition:all .12s;user-select:none}
+  .cat-opt:hover{border-color:#94a3b8;transform:translateY(-1px)}
+  .cat-opt:active{transform:translateY(0) scale(.97)}
+  .cat-opt.active{border-color:var(--primary);background:#eef4ff;color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
   .ord-fields{border:1px dashed var(--border);border-radius:10px;padding:12px 12px 2px;margin-bottom:4px;background:#fafbfc}
   .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;color:var(--text)}
   .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
@@ -235,7 +247,6 @@
           <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="cust">按客户代码</option><option value="prod">按产品类别</option><option value="po">按客户订单号</option><option value="ipo">按内部订单号</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
         </select>
         <button class="btn btn-outline btn-sm" id="btnSortDir-sales" onclick="toggleSortDir('sales')" title="切换升序/降序">↑ 升序</button>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fGroup-sales" checked onchange="render()">按分类分组</label>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone-sales" onchange="render()">隐藏已完成</label>
         <button class="btn btn-outline btn-sm" onclick="resetFilters('sales')">重置</button>
       </div>
@@ -258,7 +269,6 @@
           <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
         </select>
         <button class="btn btn-outline btn-sm" id="btnSortDir-general" onclick="toggleSortDir('general')" title="切换升序/降序">↑ 升序</button>
-        <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fGroup-general" checked onchange="render()">按分类分组</label>
         <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="fHideDone-general" onchange="render()">隐藏已完成</label>
         <button class="btn btn-outline btn-sm" onclick="resetFilters('general')">重置</button>
       </div>
@@ -463,6 +473,15 @@ function dueState(t){
 }
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1800);}
 const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function setBtnLoading(btn,loading,text){
+  if(loading){
+    if(!btn.dataset.origText)btn.dataset.origText=btn.textContent;
+    btn.disabled=true; btn.innerHTML='<span class="spinner"></span> '+(text||'处理中…');
+  }else{
+    btn.disabled=false; btn.textContent=text||btn.dataset.origText||btn.textContent;
+    delete btn.dataset.origText;
+  }
+}
 
 /* ---------- 统计 ---------- */
 function renderStats(){
@@ -664,10 +683,8 @@ function render(){
     if(!list.length){
       box.innerHTML=`<div class="empty" style="padding:36px 20px"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`;
     }else{
-      const groupChecked=document.getElementById('fGroup-'+key).checked;
       const done=list.filter(t=>t.status==='done').length;
-      const headHtml=groupChecked?`<div class="group-header">📁 ${esc(name)} <span class="count">${list.length}</span><span class="gdone">已完成 ${done}/${list.length}</span></div>`:'';
-      box.innerHTML=headHtml+`<table class="task-table">${tableHead(name,key)}<tbody>${list.map(t=>rowHTML(t,name)).join('')}</tbody></table>`;
+      box.innerHTML=`<div class="group-header">📁 ${esc(name)} <span class="count">${list.length}</span><span class="gdone">已完成 ${done}/${list.length}</span></div><table class="task-table">${tableHead(name,key)}<tbody>${list.map(t=>rowHTML(t,name)).join('')}</tbody></table>`;
     }
   });
 
@@ -701,6 +718,8 @@ function chooseCat(cat){
 }
 function openEditModal(id){
   editingId=id||null;
+  const saveBtn=document.querySelector('#editMask .modal-foot .btn-primary');
+  saveBtn.disabled=false; saveBtn.textContent='保存';
   document.getElementById('editTitle').textContent=id?'编辑事务':'新增事务';
   const t=id?tasks.find(x=>x.id===id):null;
   const o=t?orderInfo(t):{name:'',cust:'',prod:'',po:'',ipo:''};
@@ -736,34 +755,43 @@ function saveTask(){
     title=document.getElementById('inTitle').value.trim();
     if(!title){toast('请填写事务名称');return;}
   }
-  const v={title,custCode,prodType,custPo,intPo,
-    desc:document.getElementById('inDesc').value.trim(),
-    priority:document.getElementById('inPriority').value,status:document.getElementById('inStatus').value,
-    due:document.getElementById('inDue').value,category:cat};
-  if(editingId){
-    const t=tasks.find(x=>x.id===editingId);
-    const changes=[];
-    if(t.status!==v.status)changes.push(`状态：${STATUS_TXT[t.status]} → ${STATUS_TXT[v.status]}`);
-    if(t.priority!==v.priority)changes.push(`优先级：${PRI_TXT[t.priority]} → ${PRI_TXT[v.priority]}`);
-    if(t.due!==v.due)changes.push(`回顾日期：${t.due||'无'} → ${v.due||'无'}`);
-    const o0=orderInfo(t);
-    if(o0.name!==v.title)changes.push('修改了事务名称');
-    if((o0.cust||'')!==v.custCode)changes.push(`客户代码：${o0.cust||'-'} → ${v.custCode||'-'}`);
-    if((o0.prod||'')!==v.prodType)changes.push(`产品类别：${o0.prod||'-'} → ${v.prodType||'-'}`);
-    if((o0.po||'')!==v.custPo)changes.push(`客户订单号：${o0.po||'-'} → ${v.custPo||'-'}`);
-    if((o0.ipo||'')!==v.intPo)changes.push(`内部订单号：${o0.ipo||'-'} → ${v.intPo||'-'}`);
-    if(cleanDesc(t)!==v.desc)changes.push('修改了描述');
-    if(t.category!==v.category)changes.push(`分类：${t.category||'未分类'} → ${v.category||'未分类'}`);
-    Object.assign(t,v,{updatedAt:now()});
-    if(changes.length)t.logs.push({time:now(),type:t.status!==v.status?'status':'edit',text:'编辑：'+changes.join('；')});
-    toast('已保存修改');
-  }else{
-    const t={id:uid(),...v,createdAt:now(),updatedAt:now(),
-      logs:[{time:now(),type:'create',text:`创建事务（状态：${STATUS_TXT[v.status]}，优先级：${PRI_TXT[v.priority]}${v.due?'，回顾 '+v.due:''}）`}]};
-    tasks.push(t);
-    toast('已添加新事务');
-  }
-  persist();closeModal('editMask');render();
+  const btn=document.querySelector('#editMask .modal-foot .btn-primary');
+  const origText=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> 保存中…';
+  setTimeout(async()=>{
+    try{
+      const v={title,custCode,prodType,custPo,intPo,
+        desc:document.getElementById('inDesc').value.trim(),
+        priority:document.getElementById('inPriority').value,status:document.getElementById('inStatus').value,
+        due:document.getElementById('inDue').value,category:cat};
+      if(editingId){
+        const t=tasks.find(x=>x.id===editingId);
+        const changes=[];
+        if(t.status!==v.status)changes.push(`状态：${STATUS_TXT[t.status]} → ${STATUS_TXT[v.status]}`);
+        if(t.priority!==v.priority)changes.push(`优先级：${PRI_TXT[t.priority]} → ${PRI_TXT[v.priority]}`);
+        if(t.due!==v.due)changes.push(`回顾日期：${t.due||'无'} → ${v.due||'无'}`);
+        const o0=orderInfo(t);
+        if(o0.name!==v.title)changes.push('修改了事务名称');
+        if((o0.cust||'')!==v.custCode)changes.push(`客户代码：${o0.cust||'-'} → ${v.custCode||'-'}`);
+        if((o0.prod||'')!==v.prodType)changes.push(`产品类别：${o0.prod||'-'} → ${v.prodType||'-'}`);
+        if((o0.po||'')!==v.custPo)changes.push(`客户订单号：${o0.po||'-'} → ${v.custPo||'-'}`);
+        if((o0.ipo||'')!==v.intPo)changes.push(`内部订单号：${o0.ipo||'-'} → ${v.intPo||'-'}`);
+        if(cleanDesc(t)!==v.desc)changes.push('修改了描述');
+        if(t.category!==v.category)changes.push(`分类：${t.category||'未分类'} → ${v.category||'未分类'}`);
+        Object.assign(t,v,{updatedAt:now()});
+        if(changes.length)t.logs.push({time:now(),type:t.status!==v.status?'status':'edit',text:'编辑：'+changes.join('；')});
+        toast('已保存修改');
+      }else{
+        const t={id:uid(),...v,createdAt:now(),updatedAt:now(),
+          logs:[{time:now(),type:'create',text:`创建事务（状态：${STATUS_TXT[v.status]}，优先级：${PRI_TXT[v.priority]}${v.due?'，回顾 '+v.due:''}）`}]};
+        tasks.push(t);
+        toast('已添加新事务');
+      }
+      await persist();
+      closeModal('editMask');render();
+    }catch(e){ toast('保存失败：'+e.message); }
+    finally{ btn.disabled=false; btn.textContent=origText; }
+  },50);
 }
 function quickStatus(id,st){
   const t=tasks.find(x=>x.id===id);
@@ -850,50 +878,77 @@ function renderTimeline(t){
 function addNote(){
   const v=document.getElementById('dNote').value.trim();
   if(!v||!detailId)return;
-  const t=tasks.find(x=>x.id===detailId);
-  t.logs.push({time:now(),type:'note',text:'备注：'+v});
-  t.updatedAt=now();persist();renderTimeline(t);render();
-  document.getElementById('dNote').value='';toast('已记录进展');
+  const btn=document.querySelector('#detailMask .tl-note-input .btn-primary');
+  const origText=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  setTimeout(async()=>{
+    try{
+      const t=tasks.find(x=>x.id===detailId);
+      t.logs.push({time:now(),type:'note',text:'备注：'+v});
+      t.updatedAt=now();await persist();renderTimeline(t);render();
+      document.getElementById('dNote').value='';toast('已记录进展');
+    }catch(e){ toast('保存失败：'+e.message); }
+    finally{ btn.disabled=false; btn.textContent=origText; }
+  },50);
 }
 function editFromDetail(){closeModal('detailMask');openEditModal(detailId);}
 function deleteTask(){
   const t=tasks.find(x=>x.id===detailId);
   if(!t)return;
   if(!confirm(`确定删除事务「${orderInfo(t).name}」？此操作不可恢复（建议先导出备份）。`))return;
-  tasks=tasks.filter(x=>x.id!==detailId);
-  persist();closeModal('detailMask');render();toast('已删除');
+  const btn=document.querySelector('#detailMask .modal-foot .btn-danger');
+  const origText=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> 删除中…';
+  setTimeout(async()=>{
+    try{
+      tasks=tasks.filter(x=>x.id!==detailId);
+      await persist();closeModal('detailMask');render();toast('已删除');
+    }catch(e){ toast('删除失败：'+e.message); }
+    finally{ btn.disabled=false; btn.textContent=origText; }
+  },50);
 }
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 
 /* ---------- 导出 / 导入 ---------- */
 function exportData(){
-  const blob=new Blob([JSON.stringify({exportedAt:now(),tasks},null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=`工作台账备份_${todayStr()}.json`;
-  a.click();URL.revokeObjectURL(a.href);
-  toast('已导出 JSON 备份');
+  const btn=document.querySelector('header .header-actions button[onclick="exportData()"]');
+  const origText=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> 导出中…';
+  setTimeout(()=>{
+    try{
+      const blob=new Blob([JSON.stringify({exportedAt:now(),tasks},null,2)],{type:'application/json'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`工作台账备份_${todayStr()}.json`;
+      a.click();URL.revokeObjectURL(a.href);
+      toast('已导出 JSON 备份');
+    }catch(e){ toast('导出失败：'+e.message); }
+    finally{ btn.disabled=false; btn.textContent=origText; }
+  },50);
 }
 function importData(ev){
   const file=ev.target.files[0]; if(!file)return;
+  const input=ev.target;
   const reader=new FileReader();
   reader.onload=e=>{
-    try{
-      const data=JSON.parse(e.target.result);
-      const arr=Array.isArray(data)?data:data.tasks;
-      if(!Array.isArray(arr))throw 0;
-      const mode=tasks.length?confirm('检测到现有台账数据。\n「确定」= 合并导入（跳过重复ID）\n「取消」= 覆盖现有数据'):false;
-      if(mode){
-        const ids=new Set(tasks.map(t=>t.id));let n=0;
-        arr.forEach(t=>{if(t&&t.id&&!ids.has(t.id)){tasks.push(t);n++;}});
-        toast(`合并导入 ${n} 条事务`);
-      }else{
-        tasks=arr;toast(`导入 ${arr.length} 条事务（已覆盖）`);
-      }
-      persist();render();
-    }catch(err){toast('导入失败：文件格式不正确');}
-    ev.target.value='';
+    setTimeout(async()=>{
+      try{
+        const data=JSON.parse(e.target.result);
+        const arr=Array.isArray(data)?data:data.tasks;
+        if(!Array.isArray(arr))throw new Error('文件格式不正确');
+        const mode=tasks.length?confirm('检测到现有台账数据。\n「确定」= 合并导入（跳过重复ID）\n「取消」= 覆盖现有数据'):false;
+        if(mode){
+          const ids=new Set(tasks.map(t=>t.id));let n=0;
+          arr.forEach(t=>{if(t&&t.id&&!ids.has(t.id)){tasks.push(t);n++;}});
+          toast(`合并导入 ${n} 条事务`);
+        }else{
+          tasks=arr;toast(`导入 ${arr.length} 条事务（已覆盖）`);
+        }
+        await persist();render();
+      }catch(err){toast('导入失败：'+err.message);}
+      finally{ input.value=''; }
+    },50);
   };
   reader.readAsText(file);
 }
@@ -910,17 +965,27 @@ async function refreshAuditBadge(){
   }catch(e){}
 }
 async function openAudit(){
+  const box=document.getElementById('auditList');
+  box.innerHTML='<div class="empty" style="padding:24px">加载中…</div>';
+  document.getElementById('auditMask').classList.add('show');
   try{
     const r=await api.pending();
     const list=r.pending||[];
-    document.getElementById('auditList').innerHTML = list.length
-      ? list.map(a=>`<div class="audit-row"><span>${esc(a.email)}</span><div><button class="btn btn-primary btn-sm" onclick="doApprove('${esc(a.email)}')">通过</button> <button class="btn btn-danger btn-sm" onclick="doReject('${esc(a.email)}')">拒绝</button></div></div>`).join('')
+    box.innerHTML = list.length
+      ? list.map(a=>`<div class="audit-row"><span>${esc(a.email)}</span><div><button class="btn btn-primary btn-sm" onclick="doApprove('${esc(a.email)}',this)">通过</button> <button class="btn btn-danger btn-sm" onclick="doReject('${esc(a.email)}',this)">拒绝</button></div></div>`).join('')
       : '<div class="empty" style="padding:24px">暂无待审核的申请</div>';
-  }catch(e){ toast(e.message); }
-  document.getElementById('auditMask').classList.add('show');
+  }catch(e){ box.innerHTML='<div class="empty" style="padding:24px">加载失败：'+esc(e.message)+'</div>'; }
 }
-async function doApprove(email){ try{ await api.approve(email); toast('已通过：'+email); openAudit(); refreshAuditBadge(); refreshUsersBtn(); }catch(e){ toast(e.message); } }
-async function doReject(email){ try{ await api.reject(email); toast('已拒绝：'+email); openAudit(); refreshAuditBadge(); }catch(e){ toast(e.message); } }
+async function doApprove(email,btn){
+  setBtnLoading(btn,true,'处理中…');
+  try{ await api.approve(email); toast('已通过：'+email); openAudit(); refreshAuditBadge(); refreshUsersBtn(); }
+  catch(e){ toast(e.message); setBtnLoading(btn,false,'通过'); }
+}
+async function doReject(email,btn){
+  setBtnLoading(btn,true,'处理中…');
+  try{ await api.reject(email); toast('已拒绝：'+email); openAudit(); refreshAuditBadge(); }
+  catch(e){ toast(e.message); setBtnLoading(btn,false,'拒绝'); }
+}
 
 /* ---------- 账号管理（管理者账号） ---------- */
 function refreshUsersBtn(){
@@ -968,15 +1033,15 @@ function umRow(u){
   if(isFounder){
     ops='<span style="color:var(--muted);font-size:12px">管理者本人</span>';
   }else if(u.status==='pending'){
-    ops=`<button class="btn btn-primary btn-sm" onclick="umOp('approve','${em}')">通过</button>`+
-        `<button class="btn btn-danger btn-sm" onclick="umOp('delete','${em}')">删除</button>`;
+    ops=`<button class="btn btn-primary btn-sm" onclick="umOp('approve','${em}',this)">通过</button>`+
+        `<button class="btn btn-danger btn-sm" onclick="umOp('delete','${em}',this)">删除</button>`;
   }else{
     ops = (u.status==='suspended')
-      ? `<button class="btn btn-primary btn-sm" onclick="umOp('enable','${em}')">启用</button>`
-      : `<button class="btn btn-outline btn-sm" onclick="umOp('suspend','${em}')">停用</button>`;
-    if(u.online) ops+=`<button class="btn btn-outline btn-sm" onclick="umOp('kick','${em}')">强制下线</button>`;
-    ops+=`<button class="btn btn-outline btn-sm" onclick="umOp('resetpwd','${em}')">重置密码</button>`+
-         `<button class="btn btn-danger btn-sm" onclick="umOp('delete','${em}')">删除</button>`;
+      ? `<button class="btn btn-primary btn-sm" onclick="umOp('enable','${em}',this)">启用</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="umOp('suspend','${em}',this)">停用</button>`;
+    if(u.online) ops+=`<button class="btn btn-outline btn-sm" onclick="umOp('kick','${em}',this)">强制下线</button>`;
+    ops+=`<button class="btn btn-outline btn-sm" onclick="umOp('resetpwd','${em}',this)">重置密码</button>`+
+         `<button class="btn btn-danger btn-sm" onclick="umOp('delete','${em}',this)">删除</button>`;
   }
   return `<tr>
     <td class="um-mail">${em} ${u.online?'<span class="um-tag online">在线</span>':''}</td>
@@ -988,29 +1053,35 @@ function umRow(u){
     <td><div class="um-ops">${ops}</div></td>
   </tr>`;
 }
-async function umOp(action,email){
-  try{
-    if(action==='approve'){
-      await api.approve(email); toast('已通过：'+email);
-    }else if(action==='delete'){
-      if(!confirm(`确定删除账号 ${email} 吗？\n该账号名下的所有事项数据将一并永久删除，无法恢复。`)) return;
-      await api.userOp('delete',email); toast('已删除：'+email);
-    }else if(action==='resetpwd'){
-      const np=prompt(`为 ${email} 设置新密码（6 位或以上数字）：`,'');
-      if(np===null) return;
-      if(!/^\d{6,}$/.test(np)){ toast('密码须为 6 位或以上数字'); return; }
-      await api.userOp('resetpwd',email,{password:np});
-      toast('密码已重置，该账号需重新登录');
-    }else if(action==='suspend'){
-      if(!confirm(`确定停用 ${email} 吗？\n停用后该账号将无法登录，数据保留，可随时启用。`)) return;
-      await api.userOp('suspend',email); toast('已停用：'+email);
-    }else if(action==='enable'){
-      await api.userOp('enable',email); toast('已启用：'+email);
-    }else if(action==='kick'){
-      await api.userOp('kick',email); toast('已强制下线：'+email);
-    }
-    openUsers(); refreshAuditBadge();
-  }catch(e){ toast(e.message); }
+async function umOp(action,email,btn){
+  const proceed=async()=>{
+    setBtnLoading(btn,true,'处理中…');
+    try{
+      if(action==='approve'){
+        await api.approve(email); toast('已通过：'+email);
+      }else if(action==='delete'){
+        if(!confirm(`确定删除账号 ${email} 吗？\n该账号名下的所有事项数据将一并永久删除，无法恢复。`)) return;
+        await api.userOp('delete',email); toast('已删除：'+email);
+      }else if(action==='resetpwd'){
+        const np=prompt(`为 ${email} 设置新密码（6 位或以上数字）：`,'');
+        if(np===null){ setBtnLoading(btn,false,btn.dataset.origText||'重置密码'); return; }
+        if(!/^\d{6,}$/.test(np)){ toast('密码须为 6 位或以上数字'); setBtnLoading(btn,false,btn.dataset.origText||'重置密码'); return; }
+        await api.userOp('resetpwd',email,{password:np});
+        toast('密码已重置，该账号需重新登录');
+      }else if(action==='suspend'){
+        if(!confirm(`确定停用 ${email} 吗？\n停用后该账号将无法登录，数据保留，可随时启用。`)) return;
+        await api.userOp('suspend',email); toast('已停用：'+email);
+      }else if(action==='enable'){
+        await api.userOp('enable',email); toast('已启用：'+email);
+      }else if(action==='kick'){
+        await api.userOp('kick',email); toast('已强制下线：'+email);
+      }
+      openUsers(); refreshAuditBadge();
+    }catch(e){ toast(e.message); }
+    finally{ setBtnLoading(btn,false,btn.dataset.origText); }
+  };
+  btn.dataset.origText=btn.textContent;
+  await proceed();
 }
 
 /* ---------- 账号系统 ---------- */
@@ -1062,12 +1133,16 @@ async function afterLogin(e){
   await load(); render(); refreshAuditBadge(); refreshUsersBtn();
 }
 async function logout(){
+  const btn=document.querySelector('header .header-actions button[onclick="logout()"]');
+  const origText=btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> 退出中…';
   try{ await api.logout(); }catch(e){}
   authToken=null; curRole=null; tasks=[]; localStorage.removeItem('ledger_token');
   document.getElementById('app').classList.add('hidden');
   document.getElementById('loginMask').classList.remove('hidden');
   document.getElementById('lgEmail').value=''; document.getElementById('lgPwd').value='';
   clearLoginMsg();
+  btn.disabled=false; btn.textContent=origText;
 }
 
 /* ---------- 初始化 ---------- */
