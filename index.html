@@ -273,7 +273,8 @@
     <select id="fPriority-sales" onchange="render()">
       <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
     </select>
-    <select id="fCategory-sales" onchange="render()"><option value="">全部分类</option></select>
+    <select id="fCustCode-sales" onchange="render()"><option value="">全部客户代码</option></select>
+    <select id="fProdType-sales" onchange="render()"><option value="">全部产品类别</option></select>
     <label>回顾≤ <input type="date" id="fDue-sales" onchange="render()"></label>
     <select id="fSort-sales" onchange="setSortKey('sales',this.value)">
       <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="cust">按客户代码</option><option value="prod">按产品类别</option><option value="po">按客户订单号</option><option value="ipo">按内部订单号</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
@@ -290,7 +291,6 @@
     <select id="fPriority-general" onchange="render()">
       <option value="">全部优先级</option><option value="high">高</option><option value="mid">中</option><option value="low">低</option>
     </select>
-    <select id="fCategory-general" onchange="render()"><option value="">全部分类</option></select>
     <label>回顾≤ <input type="date" id="fDue-general" onchange="render()"></label>
     <select id="fSort-general" onchange="setSortKey('general',this.value)">
       <option value="due">按回顾日期</option><option value="priority">按优先级</option><option value="title">按标题</option><option value="desc">按描述</option><option value="status">按状态</option><option value="created">按创建时间</option><option value="updated">按最近更新</option>
@@ -581,7 +581,11 @@ function matchFilters(t,group){
   if(h&&h.checked&&t.status==='done')return false;
   const fs=document.getElementById('fStatus-'+group).value; if(fs&&t.status!==fs)return false;
   const fp=document.getElementById('fPriority-'+group).value; if(fp&&t.priority!==fp)return false;
-  const fc=document.getElementById('fCategory-'+group).value; if(fc&&t.category!==fc)return false;
+  if(group==='sales'){
+    const o=orderInfo(t);
+    const fcc=document.getElementById('fCustCode-sales').value; if(fcc&&o.cust!==fcc)return false;
+    const fpt=document.getElementById('fProdType-sales').value; if(fpt&&o.prod!==fpt)return false;
+  }
   const fd=document.getElementById('fDue-'+group).value; if(fd&&(!t.due||t.due>fd))return false;
   if(statFilter==='todo'||statFilter==='doing'||statFilter==='done'){if(t.status!==statFilter)return false;}
   if(statFilter==='soon'){const ds=dueState(t);if(ds!=='soon'&&ds!=='today')return false;}
@@ -709,7 +713,7 @@ function tableHead(forGroup,groupKey){
 function render(){
   updateSortDirBtn('sales'); updateSortDirBtn('general');
   renderStats();
-  refreshCategoryOptions();
+  refreshSalesFilterOptions();
 
   const groups=[
     {key:'sales', name:'销售订单'},
@@ -739,19 +743,22 @@ function render(){
 
   renderReminder();
 }
-function refreshCategoryOptions(){
-  const cats=[...new Set(tasks.map(t=>t.category).filter(Boolean))].sort();
-  const groups=[{key:'sales',name:'销售订单'},{key:'general',name:'综合事务'}];
-  groups.forEach(({key,name})=>{
-    const sel=document.getElementById('fCategory-'+key), cur=sel?sel.value:'';
-    const groupCats=cats.filter(c=>c===name);
-    const opts='<option value="">全部分类</option>'+groupCats.map(c=>`<option ${c===cur?'selected':''}>${esc(c)}</option>`).join('');
+function refreshSalesFilterOptions(){
+  const salesTasks=tasks.filter(t=>t.category==='销售订单');
+  const custs=[...new Set(salesTasks.map(t=>orderInfo(t).cust).filter(Boolean))].sort();
+  const prods=[...new Set(salesTasks.map(t=>orderInfo(t).prod).filter(Boolean))].sort();
+  const fill=(id,list,label)=>{
+    const sel=document.getElementById(id), cur=sel?sel.value:'';
+    const opts=`<option value="">${esc(label)}</option>`+list.map(v=>`<option ${v===cur?'selected':''}>${esc(v)}</option>`).join('');
     if(sel)sel.innerHTML=opts;
-  });
+  };
+  fill('fCustCode-sales',custs,'全部客户代码');
+  fill('fProdType-sales',prods,'全部产品类别');
 }
 function resetFilters(group){
   ['fSearch-'+group,'fDue-'+group].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});
-  ['fStatus-'+group,'fPriority-'+group,'fCategory-'+group].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});
+  ['fStatus-'+group,'fPriority-'+group].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});
+  if(group==='sales'){['fCustCode-sales','fProdType-sales'].forEach(id=>{const el=document.getElementById(id); if(el)el.value='';});}
   toolbarState[group]={sortKey:'due',sortDir:'asc'};
   const fsEl=document.getElementById('fSort-'+group); if(fsEl)fsEl.value='due';
   updateSortDirBtn(group); render();
