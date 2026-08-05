@@ -726,14 +726,29 @@ function render(){
     const list=sortTasks(tasks.filter(t=>t.category===name && matchFilters(t,key)), key);
     const box=document.getElementById('body-'+key);
     const toolbar=document.getElementById('toolbar-'+key);
-    box.innerHTML='';
     const done=list.filter(t=>t.status==='done').length;
     const count=list.length;
-    const header=document.createElement('div');
-    header.className='group-header';
+
+    // 更新或创建标题，避免清空整个 box 导致工具栏内的搜索输入框失焦
+    let header=box.querySelector('.group-header');
+    if(!header){
+      header=document.createElement('div');
+      header.className='group-header';
+      box.appendChild(header);
+    }
     header.innerHTML=`📁 ${esc(name)} <span class="count">${count}</span><span class="gdone">已完成 ${done}/${count}</span>`;
-    box.appendChild(header);
-    if(toolbar)box.appendChild(toolbar);
+
+    // 确保工具栏位于标题下方；已存在时不再移动，保持焦点
+    if(toolbar && toolbar.parentElement!==box){
+      box.insertBefore(toolbar, header.nextSibling);
+    }
+
+    // 只移除旧表格/空状态，不触碰工具栏
+    const oldTable=box.querySelector('.task-table');
+    if(oldTable) oldTable.remove();
+    const oldEmpty=box.querySelector('.empty');
+    if(oldEmpty) oldEmpty.remove();
+
     if(!list.length){
       box.insertAdjacentHTML('beforeend',`<div class="empty" style="padding:36px 20px"><div class="icon">🗂️</div>${tasks.length?'没有符合筛选条件的事务':'台账还是空的，点击右上角「新增事务」开始记录吧'}</div>`);
     }else{
