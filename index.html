@@ -128,7 +128,7 @@
   @keyframes pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
   .modal-head h3{font-size:16px}
-  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;transition:all .12s;border-radius:6px;padding:2px 6px}
+  .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;transition:all .12s;border-radius:8px;padding:8px 12px;min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center}
   .modal-close:hover{background:#f1f5f9;color:var(--text)}
   .modal-close:active{transform:scale(.9)}
   .modal-body{padding:18px 20px}
@@ -979,7 +979,8 @@ function deleteTask(){
   },50);
 }
 function closeModal(id){document.getElementById(id).classList.remove('show');}
-document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+// 仅允许通过明确的关闭按钮（X 图标）关闭弹窗，禁止点击遮罩层/空白处关闭
+// document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
 
 /* ---------- 导出 / 导入 ---------- */
 function exportData(){
